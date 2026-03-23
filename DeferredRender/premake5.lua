@@ -1,4 +1,4 @@
-project "VulkanDeferredRenderer"
+project "DeferredRender"
         kind "ConsoleApp"
         language "C++"
         cppdialect "C++20"

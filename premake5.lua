@@ -1,12 +1,12 @@
 include "Dependencies.lua"
 
-workspace "VulkanProjects"
+workspace "DeferredRender"
     configurations {"Debug", "Release"}
     platforms {"x86_64"}
-    startproject "VulkanDeferredRenderer"
+    startproject "DeferredRender"
 
     outputdir = "%{cfg.buildcfg}-%{cfg.system}-%{cfg.architecture}"
 
 group "Projects"
     include "vendor/glfw"
-    include "VulkanDeferredRenderer"
+    include "DeferredRender"
