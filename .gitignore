@@ -1,0 +1,12 @@
+scripts/__pycache__
+vendor/premake
+vendor/VulkanSDK
+lib/
+**.vcxproj
+**.sln
+**.vcxproj.user
+.vs
+.vscode
+bin
+bin-int
+**/Makefile
