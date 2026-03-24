@@ -3,6 +3,7 @@
 
 #include "vk_types.h"
 #include "vk_debug.h"
+#include <vk_mem_alloc.h>
 
 // -------------------------------------------------------------------------
 // QueueFamilyIndices
@@ -37,8 +38,11 @@ struct VkContext {
     VkQueue                  present_queue   = VK_NULL_HANDLE;
     VkQueue                  transfer_queue  = VK_NULL_HANDLE;
 
+	VkCommandPool            transfer_cmd_pool = VK_NULL_HANDLE; // for one-time transfer commands
     VkPhysicalDeviceProperties       device_props      = {};
     VkPhysicalDeviceMemoryProperties memory_props      = {};
+
+	VmaAllocator             allocator = VK_NULL_HANDLE;
 };
 
 // -------------------------------------------------------------------------
@@ -53,7 +57,7 @@ void vk_context_destroy(VkContext& ctx);
 // -------------------------------------------------------------------------
 QueueFamilyIndices vk_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-u32 vk_find_memory_type(const VkContext& ctx, u32 type_filter,
-                         VkMemoryPropertyFlags properties);
+//u32 vk_find_memory_type(const VkContext& ctx, u32 type_filter,
+//                         VkMemoryPropertyFlags properties);
 
 #endif // VK_CONTEXT_H

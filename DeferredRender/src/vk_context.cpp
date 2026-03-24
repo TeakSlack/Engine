@@ -24,6 +24,7 @@ static void               create_logical_device(VkContext& ctx);
 static bool               is_device_suitable(VkPhysicalDevice device, VkSurfaceKHR surface);
 static bool               check_device_extension_support(VkPhysicalDevice device);
 static int                score_device(VkPhysicalDevice device);
+static void               create_transfer_cmd_pool(VkContext& ctx);
 
 // =========================================================================
 // Public API
@@ -40,6 +41,7 @@ void vk_context_init(VkContext& ctx, void* glfw_window)
     create_surface(ctx, (GLFWwindow*)glfw_window);
     pick_physical_device(ctx);
     create_logical_device(ctx);
+	create_transfer_cmd_pool(ctx);
 
     // Cache device properties and memory layout for later use
     vkGetPhysicalDeviceProperties(ctx.physical_device, &ctx.device_props);
@@ -59,10 +61,28 @@ void vk_context_init(VkContext& ctx, void* glfw_window)
     LOG_DEBUG_TO("vulkan", "  Graphics queue : {}", ctx.queue_families.graphics);
     LOG_DEBUG_TO("vulkan", "  Present queue  : {}", ctx.queue_families.present);
     LOG_DEBUG_TO("vulkan", "  Transfer queue : {}", ctx.queue_families.transfer);
+	LOG_DEBUG_TO("vulkan", "  Memory heaps   : {}", ctx.memory_props.memoryHeapCount);
+	LOG_DEBUG_TO("vulkan", "  Transfer command pool : {}", ctx.transfer_cmd_pool);
+
+    VmaVulkanFunctions vma_vk_fns = {};
+    vma_vk_fns.vkGetInstanceProcAddr = &vkGetInstanceProcAddr;
+    vma_vk_fns.vkGetDeviceProcAddr = &vkGetDeviceProcAddr;
+
+    VmaAllocatorCreateInfo alloc_info = {};
+    alloc_info.vulkanApiVersion = VK_API_VERSION_1_3;
+    alloc_info.physicalDevice = ctx.physical_device;
+    alloc_info.device = ctx.device;
+    alloc_info.instance = ctx.instance;
+    alloc_info.pVulkanFunctions = &vma_vk_fns;
+
+    VK_CHECK(vmaCreateAllocator(&alloc_info, &ctx.allocator));
+    LOG_INFO_TO("vulkan", "VMA allocator created");
 }
 
 void vk_context_destroy(VkContext& ctx)
 {
+	vkDestroyCommandPool(ctx.device, ctx.transfer_cmd_pool, nullptr);
+	vmaDestroyAllocator(ctx.allocator);
     vkDestroyDevice(ctx.device, nullptr);
 
 #ifdef VK_ENABLE_VALIDATION
@@ -115,20 +135,20 @@ QueueFamilyIndices vk_find_queue_families(VkPhysicalDevice device, VkSurfaceKHR 
 // Memory helper
 // =========================================================================
 
-u32 vk_find_memory_type(const VkContext& ctx, u32 type_filter,
-                          VkMemoryPropertyFlags properties)
-{
-    for (u32 i = 0; i < ctx.memory_props.memoryTypeCount; ++i) {
-        bool type_match = (type_filter & (1u << i)) != 0;
-        bool prop_match = (ctx.memory_props.memoryTypes[i].propertyFlags & properties) == properties;
-        if (type_match && prop_match)
-            return i;
-    }
-    LOG_FATAL_TO("vulkan", "Failed to find suitable memory type "
-                 "(filter={:#010x}, required_props={:#010x})",
-                 type_filter, (u32)properties);
-    abort();
-}
+//u32 vk_find_memory_type(const VkContext& ctx, u32 type_filter,
+//                          VkMemoryPropertyFlags properties)
+//{
+//    for (u32 i = 0; i < ctx.memory_props.memoryTypeCount; ++i) {
+//        bool type_match = (type_filter & (1u << i)) != 0;
+//        bool prop_match = (ctx.memory_props.memoryTypes[i].propertyFlags & properties) == properties;
+//        if (type_match && prop_match)
+//            return i;
+//    }
+//    LOG_FATAL_TO("vulkan", "Failed to find suitable memory type "
+//                 "(filter={:#010x}, required_props={:#010x})",
+//                 type_filter, (u32)properties);
+//    abort();
+//}
 
 // =========================================================================
 // Internal helpers
@@ -323,4 +343,13 @@ static void create_logical_device(VkContext& ctx)
     vkGetDeviceQueue(ctx.device, ctx.queue_families.graphics, 0, &ctx.graphics_queue);
     vkGetDeviceQueue(ctx.device, ctx.queue_families.present,  0, &ctx.present_queue);
     vkGetDeviceQueue(ctx.device, ctx.queue_families.transfer, 0, &ctx.transfer_queue);
+}
+
+static void create_transfer_cmd_pool(VkContext& ctx)
+{
+	VkCommandPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	pool_info.queueFamilyIndex = ctx.queue_families.transfer;
+	pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	VK_CHECK(vkCreateCommandPool(ctx.device, &pool_info, nullptr, &ctx.transfer_cmd_pool));
 }

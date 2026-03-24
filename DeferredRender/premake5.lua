@@ -17,7 +17,8 @@ project "DeferredRender"
             "%{IncludeDir.spdlog}",
             "%{IncludeDir.glfw}",
             "%{IncludeDir.glm}",
-            "%{IncludeDir.stb}"
+            "%{IncludeDir.stb}",
+            "%{IncludeDir.vma}",
         }
 
         libdirs 

@@ -41,4 +41,8 @@ using b32  = s32;
 // -------------------------------------------------------------------------
 static constexpr u32 MAX_FRAMES_IN_FLIGHT = 2;
 
+#ifdef DEBUG
+#define VK_ENABLE_VALIDATION
+#endif
+
 #endif // VK_TYPES_H
