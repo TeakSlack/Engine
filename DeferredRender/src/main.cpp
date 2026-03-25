@@ -12,7 +12,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <string>
 #include <cstdio>   // only for the --help printf before logger is up
-#include <fstream>
 
 static constexpr u32 INITIAL_WIDTH  = 1280;
 static constexpr u32 INITIAL_HEIGHT = 720;
@@ -100,27 +99,6 @@ static void destroy_command_infrastructure(const VkContext& ctx)
     LOG_DEBUG_TO("render", "Command infrastructure destroyed");
 }
 
-// Reads a binary file (e.g., SPIR-V shader) into a byte buffer.
-static std::vector<char> read_file(const std::string& fileName)
-{
-    std::ifstream file(fileName, std::ifstream::ate | std::ifstream::binary);
-
-    if (!file.is_open())
-    {
-		LOG_ERROR_TO("render", "Failed to open file: {}", fileName);
-        exit(EXIT_FAILURE);
-    }
-
-    size_t fileSize = file.tellg();
-    std::vector<char> buffer(fileSize);
-
-    file.seekg(0);
-    file.read(buffer.data(), fileSize);
-    file.close();
-
-    return buffer;
-}
-
 static VkRenderPass create_render_pass(const VkContext& ctx, VkFormat swapchain_format) {
     // One color attachment - the swapchain image we'll present
     VkAttachmentDescription color_attachment = {};
@@ -153,9 +131,10 @@ static VkRenderPass create_render_pass(const VkContext& ctx, VkFormat swapchain_
 	depth_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkSubpassDescription subpass = {};
-    subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass.colorAttachmentCount = 1;
-    subpass.pColorAttachments = &color_ref;
+    subpass.pipelineBindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpass.colorAttachmentCount    = 1;
+    subpass.pColorAttachments       = &color_ref;
+    subpass.pDepthStencilAttachment = &depth_ref; // required: transitions depth image layout
 
     // Subpass dependency: wait for the swapchain image to be available
     // before writing color, and signal when color writing is done.
@@ -400,8 +379,10 @@ int main(int argc, char** argv)
             for (auto fb : framebuffers)
                 vkDestroyFramebuffer(ctx.device, fb, nullptr);
             vkDestroyRenderPass(ctx.device, render_pass, nullptr);
+            vk_destroy_image(ctx.allocator, ctx.device, depth_image);
 
-            render_pass = create_render_pass(ctx, sc.format);
+            render_pass  = create_render_pass(ctx, sc.format);
+            depth_image  = create_depth_image(ctx, sc.extent);
             framebuffers = create_framebuffers(ctx.device, render_pass, sc.image_views, depth_image.view, sc.extent);
             continue;
         }
@@ -417,6 +398,7 @@ int main(int argc, char** argv)
 		glm::mat4 model = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		glm::mat4 proj = glm::perspective(glm::radians(45.0f), sc.extent.width / (float)sc.extent.height, 0.1f, 10.0f);
+		proj[1][1] *= -1; // Vulkan NDC Y points down; flip to match GLM's OpenGL convention
 
 		UniformData udata = {};
 		udata.model = model;
@@ -424,7 +406,8 @@ int main(int argc, char** argv)
 		udata.proj = proj;
 		ubos[sc.current_frame].write(udata);
 
-		record_commands(cmd, framebuffers[sc.current_frame],
+		// framebuffers are indexed by swapchain image, not by frame-in-flight slot
+		record_commands(cmd, framebuffers[image_index],
 			render_pass,
 			pipeline,
 			layout, desc_sets[sc.current_frame], cube, sc.extent);
@@ -435,6 +418,13 @@ int main(int argc, char** argv)
             glfwGetFramebufferSize(window, &fb_w, &fb_h);
             LOG_WARN_TO("render", "Present returned out-of-date - recreating swapchain");
             vk_swapchain_recreate(sc, ctx, (u32)fb_w, (u32)fb_h);
+            for (auto fb : framebuffers)
+                vkDestroyFramebuffer(ctx.device, fb, nullptr);
+            vkDestroyRenderPass(ctx.device, render_pass, nullptr);
+            vk_destroy_image(ctx.allocator, ctx.device, depth_image);
+            render_pass  = create_render_pass(ctx, sc.format);
+            depth_image  = create_depth_image(ctx, sc.extent);
+            framebuffers = create_framebuffers(ctx.device, render_pass, sc.image_views, depth_image.view, sc.extent);
         }
 
         ++frame_number;
@@ -447,16 +437,17 @@ int main(int argc, char** argv)
 
     vkDeviceWaitIdle(ctx.device);
 
-    /*vkDestroyPipeline(ctx.device, pipeline, nullptr);
-    vkDestroyPipelineLayout(ctx.device, pipeline_layout, nullptr);
+    vkDestroyPipeline(ctx.device, pipeline, nullptr);
+    vkDestroyPipelineLayout(ctx.device, layout, nullptr);
     vkDestroyRenderPass(ctx.device, render_pass, nullptr);
     for (auto fb : framebuffers)
         vkDestroyFramebuffer(ctx.device, fb, nullptr);
-    vkDestroyShaderModule(ctx.device, vert_mod, nullptr);
-    vkDestroyShaderModule(ctx.device, frag_mod, nullptr);
-
-    vk_destroy_buffer(ctx.allocator, vertex_buffer);
-    vk_destroy_buffer(ctx.allocator, index_buffer);*/
+    vk_destroy_image(ctx.allocator, ctx.device, depth_image);
+    vkDestroyDescriptorSetLayout(ctx.device, set_layout, nullptr);
+    destroy_descriptor_allocator(ctx, desc_alloc);
+    for (u32 i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+        destroy_frame_ubo(ctx, ubos[i]);
+    destroy_mesh(ctx.allocator, cube);
 
     destroy_command_infrastructure(ctx);
     vk_swapchain_destroy(sc, ctx);
