@@ -69,6 +69,8 @@ public:
     VkFormat                    GetSwapchainFormat()        const { return m_SwapFormat;        }
     VkExtent2D                  GetSwapchainExtent()        const { return m_SwapExtent;        }
     std::vector<VkImage>        GetSwapchainImages()        const { return m_SwapImages;        }
+    uint32_t                    GetCurrentImageIndex()      const { return m_CurrentFrameIdx;   }
+    const std::vector<nvrhi::TextureHandle>& GetBackBuffers() const { return m_BackBuffers;    }
 
 private:
     // Init steps (called in sequence by CreateDevice) ----------------------
@@ -126,7 +128,13 @@ private:
 
     // In-flight frame sync objects
     VkSemaphore m_ImageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT] = {};
-    VkSemaphore m_RenderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT] = {};
+    // One render-finished semaphore per swapchain image (not per frame-in-flight),
+    // because the presentation engine may still hold the semaphore when the
+    // same frame slot cycles around.
+    std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+    // CPU fence per frame slot — submitted after all NVRHI work in Present(),
+    // waited on in BeginFrame() before reusing the image-available semaphore.
+    VkFence m_FrameFences[MAX_FRAMES_IN_FLIGHT] = {};
 
     // Present
 	uint32_t m_CurrentFrame = 0; // 0 .. MAX_FRAMES_IN_FLIGHT-1

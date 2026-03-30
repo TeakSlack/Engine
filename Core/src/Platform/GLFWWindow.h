@@ -26,6 +26,13 @@ public:
 	bool			ShouldClose(WindowHandle handle)	const	override;
 	double			GetTime()							const	override;
 
+	// Returns the raw GLFWwindow* for a handle (e.g. to pass to VulkanDevice).
+	GLFWwindow* GetGLFWWindow(WindowHandle handle) const
+	{
+		const WindowEntry* entry = m_Windows.Get(handle);
+		return entry ? entry->glfwWindow : nullptr;
+	}
+
 private:
 	struct WindowEntry
 	{

@@ -5,7 +5,8 @@
       "Read(//c/VulkanSDK//**)",
       "Read(//c/Users/teaki/Documents/Dev/DeferredRender/**)",
       "Bash(echo \"VULKAN_SDK=$VULKAN_SDK\")",
-      "Bash(cmake -S /c/Users/teaki/Documents/Dev/DeferredRender -B /c/Users/teaki/Documents/Dev/DeferredRender/build -G \"Visual Studio 17 2022\" -A x64)"
+      "Bash(cmake -S /c/Users/teaki/Documents/Dev/DeferredRender -B /c/Users/teaki/Documents/Dev/DeferredRender/build -G \"Visual Studio 17 2022\" -A x64)",
+      "Read(//c/VulkanSDK/**)"
     ]
   }
 }

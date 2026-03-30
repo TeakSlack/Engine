@@ -19,6 +19,8 @@ target_link_libraries(Core PUBLIC
     VendorIncludes
     Vulkan::Vulkan
     glfw
+    nvrhi
+    nvrhi_vk
 )
 
 # ---------------------------------------------------------------------------
