@@ -1,0 +1,13 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/cmake_install.cmake",
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/vendor/glfw/cmake_install.cmake",
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/vendor/glfw/src/cmake_install.cmake",
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/vendor/NVRHI/cmake_install.cmake",
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/Core/cmake_install.cmake",
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/DeferredRender/cmake_install.cmake",
+		"C:/Users/teaki/Documents/Dev/DeferredRender/build/App/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

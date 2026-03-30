@@ -13,7 +13,9 @@
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <tiny_obj_loader.h>
 #include <string>
+#include <unordered_map>
 #include <cstdio>   // only for the --help printf before logger is up
 
 static constexpr u32 INITIAL_WIDTH  = 1280;
@@ -291,193 +293,178 @@ static void framebuffer_resize_callback(GLFWwindow*, int w, int h)
 // =========================================================================
 int main(int argc, char** argv)
 {
-    AppConfig cfg = parse_args(argc, argv);
-    Logger::init(cfg.verbose, cfg.log_file);
+   // AppConfig cfg = parse_args(argc, argv);
+   // Logger::init(cfg.verbose, cfg.log_file);
 
-    LOG_INFO("vk_renderer starting");
-    if (cfg.verbose)
-        LOG_DEBUG("Verbose mode on");
-    if (!cfg.log_file.empty())
-        LOG_INFO("Logging to file: {}", cfg.log_file);
+   // LOG_INFO("vk_renderer starting");
+   // if (cfg.verbose)
+   //     LOG_DEBUG("Verbose mode on");
+   // if (!cfg.log_file.empty())
+   //     LOG_INFO("Logging to file: {}", cfg.log_file);
 
-    // ---- GLFW ----
-    LOG_DEBUG("Initialising GLFW");
-    if (!glfwInit()) {
-        LOG_FATAL("glfwInit() failed");
-        return 1;
-    }
+   // // ---- GLFW ----
+   // LOG_DEBUG("Initialising GLFW");
+   // if (!glfwInit()) {
+   //     LOG_FATAL("glfwInit() failed");
+   //     return 1;
+   // }
 
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE,  GLFW_TRUE);
+   // glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+   // glfwWindowHint(GLFW_RESIZABLE,  GLFW_TRUE);
 
-    GLFWwindow* window = glfwCreateWindow(
-        INITIAL_WIDTH, INITIAL_HEIGHT, "vk_renderer", nullptr, nullptr);
-    if (!window) {
-        LOG_FATAL("glfwCreateWindow() failed");
-        glfwTerminate();
-        return 1;
-    }
-    glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
-    LOG_INFO("Window created ({}x{})", INITIAL_WIDTH, INITIAL_HEIGHT);
+   // GLFWwindow* window = glfwCreateWindow(
+   //     INITIAL_WIDTH, INITIAL_HEIGHT, "vk_renderer", nullptr, nullptr);
+   // if (!window) {
+   //     LOG_FATAL("glfwCreateWindow() failed");
+   //     glfwTerminate();
+   //     return 1;
+   // }
+   // glfwSetFramebufferSizeCallback(window, framebuffer_resize_callback);
+   // LOG_INFO("Window created ({}x{})", INITIAL_WIDTH, INITIAL_HEIGHT);
 
-    // ---- Vulkan context + swapchain ----
-    VkContext   ctx = {};
-    VkSwapchain sc  = {};
+   // // ---- Vulkan context + swapchain ----
+   // VkContext   ctx = {};
+   // VkSwapchain sc  = {};
 
-    vk_context_init(ctx, window);
-    vk_swapchain_create(sc, ctx, INITIAL_WIDTH, INITIAL_HEIGHT);
-    create_command_infrastructure(ctx);
+   // vk_context_init(ctx, window);
+   // vk_swapchain_create(sc, ctx, INITIAL_WIDTH, INITIAL_HEIGHT);
+   // create_command_infrastructure(ctx);
 
-    // ---- Geometry ----
-    std::vector<Vertex> verts;
-    std::vector<u32>    idxs;
-    get_cube_geometry(verts, idxs);
-    Mesh cube = vk_create_mesh(ctx, ctx.allocator, verts, idxs);
+   // // ---- Render pass + depth image + framebuffers ----
+   // VkRenderPass               render_pass  = create_render_pass(ctx, sc.format);
+   // AllocatedImage             depth_image  = create_depth_image(ctx, sc.extent);
+   // std::vector<VkFramebuffer> framebuffers = create_framebuffers(
+   //     ctx.device, render_pass, sc.image_views, depth_image.view, sc.extent);
 
-    // ---- Render pass + depth image + framebuffers ----
-    VkRenderPass               render_pass  = create_render_pass(ctx, sc.format);
-    AllocatedImage             depth_image  = create_depth_image(ctx, sc.extent);
-    std::vector<VkFramebuffer> framebuffers = create_framebuffers(
-        ctx.device, render_pass, sc.image_views, depth_image.view, sc.extent);
+   // // ---- Per-frame resources (set 0: camera UBO) ----
+   // VkDescriptorSetLayout frame_set_layout = vk_create_frame_set_layout(ctx.device);
+   // VkDescriptorPool      frame_pool       = vk_create_frame_descriptor_pool(ctx.device);
+   // FrameResources        frames[MAX_FRAMES_IN_FLIGHT] = {};
+   // vk_create_frame_resources(ctx.allocator, ctx.device, frame_pool, frame_set_layout, frames);
 
-    // ---- Per-frame resources (set 0: camera UBO) ----
-    VkDescriptorSetLayout frame_set_layout = vk_create_frame_set_layout(ctx.device);
-    VkDescriptorPool      frame_pool       = vk_create_frame_descriptor_pool(ctx.device);
-    FrameResources        frames[MAX_FRAMES_IN_FLIGHT] = {};
-    vk_create_frame_resources(ctx.allocator, ctx.device, frame_pool, frame_set_layout, frames);
+   // // ---- Pipeline layout + graphics pipeline ----
+   // VkPipelineLayout pipeline_layout =
+   //     vk_create_pipeline_layout(ctx.device, frame_set_layout, mat_set_layout);
 
-    // ---- Material resources (set 1: albedo sampler) ----
-    VkDescriptorSetLayout mat_set_layout = vk_create_material_set_layout(ctx.device);
-    VkDescriptorPool      mat_pool       = vk_create_material_descriptor_pool(ctx.device, 16);
+   // VkShaderModule vert_mod = vk_load_shader(ctx.device, "src/shader/cube.vert.spv");
+   // VkShaderModule frag_mod = vk_load_shader(ctx.device, "src/shader/cube.frag.spv");
 
-    // ---- Texture + material ----
-    VkSampler sampler  = vk_create_default_sampler(ctx.device, 16.0f);
-    Texture   cube_tex = load_texture(ctx, "src/texture/texture.jpg", sampler);
+   // PipelineCreateInfo pipe_info = {};
+   // pipe_info.render_pass     = render_pass;
+   // pipe_info.layout          = pipeline_layout;
+   // pipe_info.vert_module     = vert_mod;
+   // pipe_info.frag_module     = frag_mod;
+   // pipe_info.viewport_extent = sc.extent;
+   // pipe_info.material_type   = MaterialType::PBROpaque;
 
-    Material cube_mat = {};
-    cube_mat.type    = MaterialType::PBROpaque;
-    cube_mat.albedo  = &cube_tex;
-    vk_write_material_descriptors(ctx.device, mat_pool, mat_set_layout, cube_mat);
+   // VkPipeline pipeline = vk_create_graphics_pipeline(ctx.device, pipe_info);
 
-    // ---- RenderObject ----
-    RenderObject cube_obj;
-    cube_obj.mesh      = &cube;
-    cube_obj.material  = &cube_mat;
-    cube_obj.transform = glm::mat4(1.0f);
+   // // Shader modules are no longer needed after pipeline creation
+   // vk_destroy_shader(ctx.device, vert_mod);
+   // vk_destroy_shader(ctx.device, frag_mod);
 
-    // ---- Pipeline layout + graphics pipeline ----
-    VkPipelineLayout pipeline_layout =
-        vk_create_pipeline_layout(ctx.device, frame_set_layout, mat_set_layout);
+   // LOG_INFO("Initialisation complete, entering main loop");
 
-    VkShaderModule vert_mod = vk_load_shader(ctx.device, "src/shader/cube.vert.spv");
-    VkShaderModule frag_mod = vk_load_shader(ctx.device, "src/shader/cube.frag.spv");
+   // // =========================================================================
+   // // Main loop
+   // // =========================================================================
+   // u64 frame_number = 0;
 
-    PipelineCreateInfo pipe_info = {};
-    pipe_info.render_pass     = render_pass;
-    pipe_info.layout          = pipeline_layout;
-    pipe_info.vert_module     = vert_mod;
-    pipe_info.frag_module     = frag_mod;
-    pipe_info.viewport_extent = sc.extent;
-    pipe_info.material_type   = MaterialType::PBROpaque;
+   // while (!glfwWindowShouldClose(window)) {
+   //     glfwPollEvents();
 
-    VkPipeline pipeline = vk_create_graphics_pipeline(ctx.device, pipe_info);
+   //     int fb_w = 0, fb_h = 0;
+   //     glfwGetFramebufferSize(window, &fb_w, &fb_h);
+   //     if (fb_w == 0 || fb_h == 0)
+   //         continue; // window is minimized
 
-    // Shader modules are no longer needed after pipeline creation
-    vk_destroy_shader(ctx.device, vert_mod);
-    vk_destroy_shader(ctx.device, frag_mod);
+   //     u32 image_index = vk_swapchain_acquire(sc, ctx);
+   //     if (image_index == UINT32_MAX || g_framebuffer_resized) {
+   //         g_framebuffer_resized = false;
+   //         LOG_INFO_TO("render", "Swapchain out of date - recreating");
+   //         recreate_swapchain_resources(
+   //             ctx, sc, framebuffers, render_pass, depth_image, (u32)fb_w, (u32)fb_h);
+   //         continue;
+   //     }
 
-    LOG_INFO("Initialisation complete, entering main loop");
+   //     // Rotate cube over time
+   //     float     angle       = (float)glfwGetTime();
+   //     glm::mat4 orientation = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+   //     static glm::mat4 spin        = glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f),  glm::vec3(0.0f, 1.0f, 0.0f));
+   //     cube_obj.transform    = spin * orientation;
 
-    // =========================================================================
-    // Main loop
-    // =========================================================================
-    u64 frame_number = 0;
+   //     if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+			//spin = glm::rotate(spin, glm::radians(-1.f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
+   //     if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+   //         spin = glm::rotate(spin, glm::radians(1.f), glm::vec3(0.0f, 1.0f, 0.0f));
 
-        int fb_w = 0, fb_h = 0;
-        glfwGetFramebufferSize(window, &fb_w, &fb_h);
-        if (fb_w == 0 || fb_h == 0)
-            continue; // window is minimized
+   //     // Write camera data for this frame slot
+   //     glm::vec3 eye  = glm::vec3(2.0f, 2.0f, 2.0f);
+   //     glm::mat4 view = glm::lookAt(eye, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+   //     glm::mat4 proj = glm::perspective(
+   //         glm::radians(45.0f), sc.extent.width / (f32)sc.extent.height, 0.1f, 10.0f);
+   //     proj[1][1] *= -1; // Vulkan NDC Y points down; flip to match GLM's OpenGL convention
 
-        u32 image_index = vk_swapchain_acquire(sc, ctx);
-        if (image_index == UINT32_MAX || g_framebuffer_resized) {
-            g_framebuffer_resized = false;
-            LOG_INFO_TO("render", "Swapchain out of date - recreating");
-            recreate_swapchain_resources(
-                ctx, sc, framebuffers, render_pass, depth_image, (u32)fb_w, (u32)fb_h);
-            continue;
-        }
+			//
 
-        // Rotate cube over time
-        float angle = (float)glfwGetTime();
-        cube_obj.transform = glm::rotate(glm::mat4(1.0f), angle, glm::vec3(0.0f, 1.0f, 0.0f));
+   //     CameraData* cam = frames[sc.current_frame].camera_mapped;
+   //     cam->view       = view;
+   //     cam->proj       = proj;
+   //     cam->view_proj  = proj * view;
+   //     cam->camera_pos = eye;
 
-        // Write camera data for this frame slot
-        glm::vec3 eye  = glm::vec3(2.0f, 2.0f, 2.0f);
-        glm::mat4 view = glm::lookAt(eye, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 proj = glm::perspective(
-            glm::radians(45.0f), sc.extent.width / (f32)sc.extent.height, 0.1f, 10.0f);
-        proj[1][1] *= -1; // Vulkan NDC Y points down; flip to match GLM's OpenGL convention
+   //     // Record and submit
+   //     VkCommandBuffer cmd = frame_data[sc.current_frame].command_buffer;
+   //     vkResetCommandBuffer(cmd, 0);
+   //     record_commands(cmd, framebuffers[image_index],
+   //         render_pass, pipeline, pipeline_layout,
+   //         frames[sc.current_frame].frame_set,
+   //         cube_obj, sc.current_frame, sc.extent);
 
-        CameraData* cam = frames[sc.current_frame].camera_mapped;
-        cam->view       = view;
-        cam->proj       = proj;
-        cam->view_proj  = proj * view;
-        cam->camera_pos = eye;
+   //     bool ok = vk_swapchain_submit_and_present(sc, ctx, cmd, image_index);
+   //     if (!ok) {
+   //         glfwGetFramebufferSize(window, &fb_w, &fb_h);
+   //         LOG_WARN_TO("render", "Present returned out-of-date - recreating swapchain");
+   //         recreate_swapchain_resources(
+   //             ctx, sc, framebuffers, render_pass, depth_image, (u32)fb_w, (u32)fb_h);
+   //     }
 
-        // Record and submit
-        VkCommandBuffer cmd = frame_data[sc.current_frame].command_buffer;
-        vkResetCommandBuffer(cmd, 0);
-        record_commands(cmd, framebuffers[image_index],
-            render_pass, pipeline, pipeline_layout,
-            frames[sc.current_frame].frame_set,
-            cube_obj, sc.current_frame, sc.extent);
+   //     ++frame_number;
+   // }
 
-        bool ok = vk_swapchain_submit_and_present(sc, ctx, cmd, image_index);
-        if (!ok) {
-            glfwGetFramebufferSize(window, &fb_w, &fb_h);
-            LOG_WARN_TO("render", "Present returned out-of-date - recreating swapchain");
-            recreate_swapchain_resources(
-                ctx, sc, framebuffers, render_pass, depth_image, (u32)fb_w, (u32)fb_h);
-        }
+   // LOG_INFO("Main loop exited after {} frames", frame_number);
 
-        ++frame_number;
-    }
+   // // =========================================================================
+   // // Cleanup
+   // // =========================================================================
+   // vkDeviceWaitIdle(ctx.device);
 
-    LOG_INFO("Main loop exited after {} frames", frame_number);
+   // vkDestroyPipeline(ctx.device, pipeline, nullptr);
+   // vkDestroyPipelineLayout(ctx.device, pipeline_layout, nullptr);
+   // vkDestroyRenderPass(ctx.device, render_pass, nullptr);
+   // for (auto fb : framebuffers)
+   //     vkDestroyFramebuffer(ctx.device, fb, nullptr);
+   // vk_destroy_image(ctx.allocator, ctx.device, depth_image);
 
-    // =========================================================================
-    // Cleanup
-    // =========================================================================
-    vkDeviceWaitIdle(ctx.device);
+   // destroy_texture(ctx, cube_tex);
+   // vkDestroySampler(ctx.device, sampler, nullptr);
+   // vkDestroyDescriptorPool(ctx.device, mat_pool, nullptr);
+   // vkDestroyDescriptorSetLayout(ctx.device, mat_set_layout, nullptr);
 
-    vkDestroyPipeline(ctx.device, pipeline, nullptr);
-    vkDestroyPipelineLayout(ctx.device, pipeline_layout, nullptr);
-    vkDestroyRenderPass(ctx.device, render_pass, nullptr);
-    for (auto fb : framebuffers)
-        vkDestroyFramebuffer(ctx.device, fb, nullptr);
-    vk_destroy_image(ctx.allocator, ctx.device, depth_image);
+   // vk_destroy_frame_resources(ctx.allocator, frames);
+   // vkDestroyDescriptorPool(ctx.device, frame_pool, nullptr);
+   // vkDestroyDescriptorSetLayout(ctx.device, frame_set_layout, nullptr);
 
-    destroy_texture(ctx, cube_tex);
-    vkDestroySampler(ctx.device, sampler, nullptr);
-    vkDestroyDescriptorPool(ctx.device, mat_pool, nullptr);
-    vkDestroyDescriptorSetLayout(ctx.device, mat_set_layout, nullptr);
+   // vk_destroy_mesh(ctx.allocator, cube);
+   // destroy_command_infrastructure(ctx);
+   // vk_swapchain_destroy(sc, ctx);
+   // vk_context_destroy(ctx);
 
-    vk_destroy_frame_resources(ctx.allocator, frames);
-    vkDestroyDescriptorPool(ctx.device, frame_pool, nullptr);
-    vkDestroyDescriptorSetLayout(ctx.device, frame_set_layout, nullptr);
+   // glfwDestroyWindow(window);
+   // glfwTerminate();
 
-    vk_destroy_mesh(ctx.allocator, cube);
-    destroy_command_infrastructure(ctx);
-    vk_swapchain_destroy(sc, ctx);
-    vk_context_destroy(ctx);
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
-
-    LOG_INFO("Shutdown complete");
-    spdlog::shutdown();
+   // LOG_INFO("Shutdown complete");
+   // spdlog::shutdown();
     return 0;
 }

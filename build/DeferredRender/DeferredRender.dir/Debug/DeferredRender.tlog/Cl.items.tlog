@@ -1,0 +1,16 @@
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\lib_impl.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\lib_impl.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\logger.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\logger.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\main.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\main.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\pipeline_builder.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\pipeline_builder.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_buffer.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_buffer.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_context.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_context.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_debug.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_debug.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_descriptors.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_descriptors.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_frame.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_frame.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_material.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_material.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_mesh.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_mesh.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_pipeline.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_pipeline.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_renderable.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_renderable.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_swapchain.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_swapchain.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_texture.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_texture.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\DeferredRender\src\vk_uniforms.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\DeferredRender\DeferredRender.dir\Debug\vk_uniforms.obj

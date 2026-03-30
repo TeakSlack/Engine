@@ -1,3 +1,3 @@
 #!/bin/bash
-
-python3 SetupProjectsLinux.py
+cd ../
+python3 scripts/SetupProjectsLinux.py

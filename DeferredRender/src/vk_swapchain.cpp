@@ -110,7 +110,8 @@ void vk_swapchain_create(VkSwapchain& sc, const VkContext& ctx, u32 width, u32 h
     // Request one more image than the minimum to avoid stalling on the driver
     u32 image_count = capabilities.minImageCount + 1;
     if (capabilities.maxImageCount > 0)
-        image_count = std::min(image_count, capabilities.maxImageCount);
+        image_count = 0;
+        //image_count = std::min(image_count, capabilities.maxImageCount);
 
     VkSwapchainCreateInfoKHR create_info = {};
     create_info.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;

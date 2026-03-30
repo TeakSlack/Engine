@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\teaki\Documents\Dev\DeferredRender\build\CMakeFiles\213c313f2a49c9f1d8bf8a9c8dd6c3c8\update_mappings.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\glfw\src\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\glfw\src\mappings.h.in">
+      <Filter>Header Files</Filter>
+    </None>
+    <None Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\glfw\CMake\GenerateMappings.cmake" />
+    <None Include="C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\glfw\src\CMakeFiles\update_mappings" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{F16A4675-550B-38B2-A618-AEB88439E510}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{62CA8FCC-D449-3E77-8EAA-B5753C23BD52}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

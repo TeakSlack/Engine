@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\teaki\Documents\Dev\DeferredRender\build\CMakeFiles\6a70274f4d87bad90d858d0a3ffcd4a4\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{F16A4675-550B-38B2-A618-AEB88439E510}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

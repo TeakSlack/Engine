@@ -1,0 +1,72 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Engine.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Graphics\VulkanDevice.cpp">
+      <Filter>src\Graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\LayerStack.cpp">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Platform\GLFWWindow.cpp">
+      <Filter>src\Platform</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Engine.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Events\ApplicationEvents.h">
+      <Filter>src\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Events\Event.h">
+      <Filter>src\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Events\KeyEvents.h">
+      <Filter>src\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Events\MouseEvents.h">
+      <Filter>src\Events</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Graphics\RenderDevice.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Graphics\VulkanDevice.h">
+      <Filter>src\Graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Handle.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\IWindowSystem.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Layer.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\LayerStack.h">
+      <Filter>src</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\src\Platform\GLFWWindow.h">
+      <Filter>src\Platform</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\teaki\Documents\Dev\DeferredRender\Core\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{A5D90888-A423-3848-9C84-2048D960ED07}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Events">
+      <UniqueIdentifier>{22B72B98-FEE9-37A1-9F19-36F35564A99D}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Graphics">
+      <UniqueIdentifier>{3A60EEDE-9F6A-3E81-B3EF-86BDA484FEDF}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\Platform">
+      <UniqueIdentifier>{7AAEBF30-1D04-3182-BC91-A2631B48A18B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

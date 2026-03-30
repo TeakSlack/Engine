@@ -1,0 +1,17 @@
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-allocator.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-allocator.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-buffer.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-buffer.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-commandlist.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-commandlist.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-compute.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-compute.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-constants.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-constants.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-device.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-device.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-graphics.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-graphics.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-meshlets.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-meshlets.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-queries.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-queries.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-queue.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-queue.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-raytracing.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-raytracing.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-resource-bindings.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-resource-bindings.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-shader.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-shader.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-staging-texture.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-staging-texture.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-state-tracking.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-state-tracking.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-texture.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-texture.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-upload.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\NVRHI\nvrhi_vk.dir\Debug\vulkan-upload.obj

@@ -1,0 +1,8 @@
+﻿  Compiling GLSL shaders to SPIR-V...
+  Compiling shaders in C:\Users\teaki\Documents\Dev\DeferredRender\scripts\..\DeferredRender\src\shader...
+    cube.vert -> cube.vert.spv
+    mesh.vert -> mesh.vert.spv
+    cube.frag -> cube.frag.spv
+    mesh.frag -> mesh.frag.spv
+  All shaders compiled successfully.
+  DeferredRender.vcxproj -> C:\Users\teaki\Documents\Dev\DeferredRender\bin\Debug-Windows-x86_64\DeferredRender\DeferredRender.exe

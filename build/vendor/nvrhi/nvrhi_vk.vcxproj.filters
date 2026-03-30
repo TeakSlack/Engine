@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-allocator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-buffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-commandlist.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-compute.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-constants.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-device.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-graphics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-meshlets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-queries.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-queue.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-raytracing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-resource-bindings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-staging-texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-state-tracking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-upload.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\include\nvrhi\vulkan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\common\versioning.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\src\vulkan\vulkan-backend.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\teaki\Documents\Dev\DeferredRender\vendor\NVRHI\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{62CA8FCC-D449-3E77-8EAA-B5753C23BD52}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{9F3AAB6F-6C89-32BD-AC59-09FA2B7F4C8D}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

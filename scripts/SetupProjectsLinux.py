@@ -8,7 +8,11 @@ class SetupProjectsLinux:
     @classmethod
     def Setup(cls):
         cls.GetVulkan()
-        subprocess.call([os.path.abspath('./vendor/premake/bin/premake5'), 'gmake2'])
+        subprocess.call([
+            'cmake', '-S', '.', '-B', 'build',
+            '-G', 'Unix Makefiles',
+            '-DCMAKE_BUILD_TYPE=Debug'
+        ])
 
     @classmethod
     def GetVulkan(cls):

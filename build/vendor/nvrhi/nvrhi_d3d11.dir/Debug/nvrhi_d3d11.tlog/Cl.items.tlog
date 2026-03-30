@@ -1,0 +1,11 @@
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\common\dxgi-format.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\dxgi-format.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-buffer.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-buffer.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-commandlist.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-commandlist.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-compute.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-compute.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-constants.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-constants.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-device.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-device.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-graphics.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-graphics.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-queries.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-queries.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-resource-bindings.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-resource-bindings.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-shader.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-shader.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d11\d3d11-texture.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d11.dir\Debug\d3d11-texture.obj

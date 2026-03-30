@@ -1,0 +1,16 @@
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\common\dxgi-format.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\dxgi-format.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-buffer.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-buffer.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-commandlist.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-commandlist.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-compute.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-compute.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-constants.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-constants.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-descriptor-heap.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-descriptor-heap.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-device.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-device.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-graphics.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-graphics.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-meshlets.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-meshlets.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-queries.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-queries.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-raytracing.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-raytracing.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-resource-bindings.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-resource-bindings.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-shader.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-shader.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-state-tracking.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-state-tracking.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-texture.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-texture.obj
+C:\Users\teaki\Documents\Dev\DeferredRender\vendor\nvrhi\src\d3d12\d3d12-upload.cpp;C:\Users\teaki\Documents\Dev\DeferredRender\build\vendor\nvrhi\nvrhi_d3d12.dir\Debug\d3d12-upload.obj
