@@ -10,3 +10,4 @@ lib/
 bin
 bin-int
 **/Makefile
+build
