@@ -1,19 +1,12 @@
 #ifndef ENGINE_H
 #define ENGINE_H
-#include "LayerStack.h"
+#include "Util/LayerStack.h"
 #include "Events/Event.h"
 #include <string>
 #include <vector>
 
 // -------------------------------------------------------------------------
 // IEngineSubmodule — interface every engine subsystem implements.
-//
-// Following Gregory §15.4: each subsystem has an explicit Init/Shutdown
-// lifecycle. Registration order controls init sequence; shutdown runs in
-// reverse (last registered, first shut down).
-//
-// Tick is optional: override it for subsystems that need a per-frame update
-// (e.g. input polling, audio update, physics step).
 // -------------------------------------------------------------------------
 class IEngineSubmodule
 {
@@ -33,15 +26,6 @@ private:
 
 // -------------------------------------------------------------------------
 // Engine — Meyer's singleton manager.
-//
-// Responsibilities:
-//   1. Hold the ordered list of IEngineSubmodule registrations.
-//   2. Init them in registration order; shut them down in reverse.
-//   3. Own the LayerStack and drive update + event propagation each frame.
-//   4. Provide Run() as the single application entry point.
-//
-// Raw (non-owning) pointers are stored for both submodules and layers.
-// The caller owns the objects and must ensure they outlive Run().
 // -------------------------------------------------------------------------
 class Engine
 {

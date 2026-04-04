@@ -1,6 +1,7 @@
 #include "Engine.h"
 #include "Events/ApplicationEvents.h"
-#include "IWindowSystem.h"
+#include "Window/IWindowSystem.h"
+#include "Util/Log.h"
 
 Engine& Engine::Get()
 {
@@ -46,6 +47,7 @@ void Engine::ShutdownSubmodules()
 // -------------------------------------------------------------------------
 void Engine::Run()
 {
+    Log::Get().Init();
     InitSubmodules();
     m_Running = true;
 

@@ -2,8 +2,11 @@
 #define VULKAN_HPP_DISPATCH_LOADER_DYNAMIC 1
 #include <vulkan/vulkan.hpp>  // must precede vulkan.h (via VulkanDevice.h) for HPP macros to resolve
 #include "VulkanDevice.h"
+#include "Util/Log.h"
+#include "Render/NvrhiGpuDevice.h"
 
 #include <GLFW/glfw3.h>
+#include <nvrhi/vulkan.h>
 
 #include <iostream>
 #include <array>
@@ -29,6 +32,8 @@ static constexpr std::array OPTIONAL_DEVICE_EXTENSIONS = {
     VK_NV_MESH_SHADER_EXTENSION_NAME,
 };
 
+static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+
 #ifdef NDEBUG
 static constexpr bool ENABLE_VALIDATION = false;
 #else
@@ -45,16 +50,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* data,
     void* /*userData*/)
 {
-    const char* tag =
-        (type & VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT) ? "[perf] " :
-        (type & VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT)  ? "[validation] " : "";
+    const char* msg = data->pMessage;
 
     if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-        std::cerr << "[Vulkan] " << tag << data->pMessage << '\n';
+		CORE_ERROR("{} ", msg);
     else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-		std::cerr << "[Vulkan] " << tag << data->pMessage << '\n';
+		CORE_ERROR("{} ", msg);
     else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-        std::cout << "[Vulkan] " << tag << data->pMessage << '\n';
+        CORE_INFO("{}", msg);
 
     return VK_FALSE;
 }
@@ -94,135 +97,272 @@ static void DestroyDebugMessenger(VkInstance instance, VkDebugUtilsMessengerEXT 
 }
 
 // =========================================================================
+// QueueFamilyIndices — internal to this translation unit
+// =========================================================================
+
+struct QueueFamilyIndices
+{
+    uint32_t graphics = UINT32_MAX;
+    uint32_t present  = UINT32_MAX;
+    uint32_t transfer = UINT32_MAX;   // dedicated transfer; falls back to graphics
+    uint32_t compute  = UINT32_MAX;   // dedicated compute;  falls back to graphics
+
+    bool IsComplete() const { return graphics != UINT32_MAX && present != UINT32_MAX; }
+};
+
+// =========================================================================
+// MessageCallback — routes NVRHI diagnostics to stdout/stderr
+// =========================================================================
+
+namespace {
+
+class MessageCallback : public nvrhi::IMessageCallback
+{
+public:
+    void message(nvrhi::MessageSeverity severity, const char* text) override;
+};
+
+void MessageCallback::message(nvrhi::MessageSeverity severity, const char* text)
+{
+    switch (severity)
+    {
+    case nvrhi::MessageSeverity::Fatal:
+		CORE_ERROR(text);
+        abort();
+        break;
+    case nvrhi::MessageSeverity::Error:
+		CORE_ERROR(text);
+        break;
+    case nvrhi::MessageSeverity::Warning:
+		CORE_ERROR(text);
+        break;
+    case nvrhi::MessageSeverity::Info:
+        CORE_INFO(text);
+        break;
+    }
+}
+
+} // namespace
+
+// =========================================================================
+// VulkanDevice::Impl — all Vulkan and NVRHI-Vulkan state lives here
+// =========================================================================
+
+struct VulkanDevice::Impl
+{
+    // Non-owning window pointer
+    GLFWwindow* m_Window = nullptr;
+
+    // Core Vulkan objects
+    VkInstance               m_Instance       = VK_NULL_HANDLE;
+    VkDebugUtilsMessengerEXT m_DebugMessenger = VK_NULL_HANDLE;
+    VkSurfaceKHR             m_Surface        = VK_NULL_HANDLE;
+    VkPhysicalDevice         m_PhysicalDevice = VK_NULL_HANDLE;
+    VkDevice                 m_Device         = VK_NULL_HANDLE;
+
+    // Queues
+    QueueFamilyIndices m_Queues;
+    VkQueue            m_GraphicsQueue = VK_NULL_HANDLE;
+    VkQueue            m_PresentQueue  = VK_NULL_HANDLE;
+    VkQueue            m_TransferQueue = VK_NULL_HANDLE;
+    VkQueue            m_ComputeQueue  = VK_NULL_HANDLE;
+
+    // Swapchain
+    VkSwapchainKHR                    m_Swapchain  = VK_NULL_HANDLE;
+    VkFormat                          m_SwapFormat = VK_FORMAT_UNDEFINED;
+    VkExtent2D                        m_SwapExtent {};
+    std::vector<VkImage>              m_SwapImages; // Owned by swapchain
+    std::vector<nvrhi::TextureHandle> m_BackBuffers; // NVRHI wrappers around the above
+
+    // In-flight frame sync objects
+    VkSemaphore              m_ImageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT] = {};
+    // One render-finished semaphore per swapchain image (not per frame-in-flight),
+    // because the presentation engine may still hold the semaphore when the
+    // same frame slot cycles around.
+    std::vector<VkSemaphore> m_RenderFinishedSemaphores;
+    // CPU fence per frame slot — submitted after all NVRHI work in Present(),
+    // waited on in BeginFrame() before reusing the image-available semaphore.
+    VkFence                  m_FrameFences[MAX_FRAMES_IN_FLIGHT] = {};
+
+    // Present
+    uint32_t m_CurrentFrame    = 0; // 0 .. MAX_FRAMES_IN_FLIGHT-1
+    uint32_t m_CurrentFrameIdx = 0; // index of the acquired swapchain image
+
+    // NVRHI
+    nvrhi::vulkan::DeviceHandle      m_NvrhiDevice;
+    MessageCallback                  m_MessageCallback;
+    std::unique_ptr<NvrhiGpuDevice>  m_GpuDevice;
+
+    // Extension name arrays kept alive for the DeviceDesc lifetime
+    std::vector<const char*> m_InstanceExtensions;
+    std::vector<const char*> m_DeviceExtensions;
+
+    // ------------------------------------------------------------------
+    // Init steps (called in sequence by VulkanDevice::CreateDevice)
+    // ------------------------------------------------------------------
+    void CreateInstance();
+    void SetupDebugMessenger();
+    void CreateSurface();
+    void PickPhysicalDevice();
+    void CreateLogicalDevice();
+
+    // Physical-device helpers
+    bool               IsDeviceSuitable    (VkPhysicalDevice device) const;
+    bool               CheckExtensionSupport(VkPhysicalDevice device) const;
+    int                ScoreDevice         (VkPhysicalDevice device) const;
+    QueueFamilyIndices FindQueueFamilies   (VkPhysicalDevice device) const;
+
+    // Swapchain helpers
+    VkSurfaceFormatKHR ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats);
+    VkPresentModeKHR   ChoosePresentMode  (const std::vector<VkPresentModeKHR>& modes);
+    VkExtent2D         ChooseExtent       (const VkSurfaceCapabilitiesKHR& caps, uint32_t w, uint32_t h);
+    void               CreateSyncObjects  ();
+    nvrhi::Format      ToNvrhiFormat      (VkFormat format) const;
+    void               CreateHandleForNativeTextures();
+};
+
+// =========================================================================
 // VulkanDevice — lifecycle
 // =========================================================================
 
-VulkanDevice::VulkanDevice(GLFWwindow* window) : m_Window(window) {}
+VulkanDevice::VulkanDevice(GLFWwindow* window)
+    : m_Impl(std::make_unique<Impl>())
+{
+    m_Impl->m_Window = window;
+}
 
 VulkanDevice::~VulkanDevice()
 {
-    if (m_NvrhiDevice)
+    if (m_Impl->m_NvrhiDevice)
         DestroyDevice();
 }
 
-nvrhi::IDevice* VulkanDevice::CreateDevice()
+IGpuDevice* VulkanDevice::CreateDevice()
 {
-    CreateInstance();
+    auto& i = *m_Impl;
+
+    i.CreateInstance();
 
     if (ENABLE_VALIDATION)
-        SetupDebugMessenger();
+        i.SetupDebugMessenger();
 
-    CreateSurface();
-    PickPhysicalDevice();
-    CreateLogicalDevice();
+    i.CreateSurface();
+    i.PickPhysicalDevice();
+    i.CreateLogicalDevice();
 
     nvrhi::vulkan::DeviceDesc desc;
-    desc.errorCB            = &m_MessageCallback;
-    desc.instance           = m_Instance;
-    desc.physicalDevice     = m_PhysicalDevice;
-    desc.device             = m_Device;
+    desc.errorCB            = &i.m_MessageCallback;
+    desc.instance           = i.m_Instance;
+    desc.physicalDevice     = i.m_PhysicalDevice;
+    desc.device             = i.m_Device;
 
-    desc.graphicsQueue      = m_GraphicsQueue;
-    desc.graphicsQueueIndex = static_cast<int>(m_Queues.graphics);
-    desc.transferQueue      = m_TransferQueue;
-    desc.transferQueueIndex = static_cast<int>(m_Queues.transfer);
-    desc.computeQueue       = m_ComputeQueue;
-    desc.computeQueueIndex  = static_cast<int>(m_Queues.compute);
+    desc.graphicsQueue      = i.m_GraphicsQueue;
+    desc.graphicsQueueIndex = static_cast<int>(i.m_Queues.graphics);
+    desc.transferQueue      = i.m_TransferQueue;
+    desc.transferQueueIndex = static_cast<int>(i.m_Queues.transfer);
+    desc.computeQueue       = i.m_ComputeQueue;
+    desc.computeQueueIndex  = static_cast<int>(i.m_Queues.compute);
 
-    desc.instanceExtensions    = m_InstanceExtensions.data();
-    desc.numInstanceExtensions = m_InstanceExtensions.size();
-    desc.deviceExtensions      = m_DeviceExtensions.data();
-    desc.numDeviceExtensions   = m_DeviceExtensions.size();
+    desc.instanceExtensions    = i.m_InstanceExtensions.data();
+    desc.numInstanceExtensions = i.m_InstanceExtensions.size();
+    desc.deviceExtensions      = i.m_DeviceExtensions.data();
+    desc.numDeviceExtensions   = i.m_DeviceExtensions.size();
 
     desc.bufferDeviceAddressSupported = true;
 
-    m_NvrhiDevice = nvrhi::vulkan::createDevice(desc);
-    if (!m_NvrhiDevice)
+    i.m_NvrhiDevice = nvrhi::vulkan::createDevice(desc);
+    if (!i.m_NvrhiDevice)
     {
         std::cerr << "[VulkanDevice] nvrhi::vulkan::createDevice() returned null\n";
         abort();
     }
 
     std::cout << "[VulkanDevice] NVRHI Vulkan device created\n";
-    return m_NvrhiDevice.Get();
+    i.m_GpuDevice = std::make_unique<NvrhiGpuDevice>(i.m_NvrhiDevice.Get());
+    return i.m_GpuDevice.get();
 }
 
 void VulkanDevice::DestroyDevice()
 {
-    if (m_NvrhiDevice)
+    auto& i = *m_Impl;
+
+    if (i.m_NvrhiDevice)
     {
-        m_NvrhiDevice->waitForIdle();
-        // Release TextureHandle wrappers before destroying the device so that
-        // NVRHI can destroy the VkImageViews they own while the device is alive.
-        m_BackBuffers.clear();
-        m_NvrhiDevice = nullptr;
+        i.m_NvrhiDevice->waitForIdle();
+        // Release GpuDevice (holds non-owning ptr to NVRHI device) first,
+        // then clear NVRHI texture wrappers, then destroy the device.
+        i.m_GpuDevice.reset();
+        i.m_BackBuffers.clear();
+        i.m_NvrhiDevice = nullptr;
     }
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (size_t f = 0; f < MAX_FRAMES_IN_FLIGHT; ++f)
     {
-        if (m_ImageAvailableSemaphores[i] != VK_NULL_HANDLE)
-            vkDestroySemaphore(m_Device, m_ImageAvailableSemaphores[i], nullptr);
-        if (m_FrameFences[i] != VK_NULL_HANDLE)
-            vkDestroyFence(m_Device, m_FrameFences[i], nullptr);
+        if (i.m_ImageAvailableSemaphores[f] != VK_NULL_HANDLE)
+            vkDestroySemaphore(i.m_Device, i.m_ImageAvailableSemaphores[f], nullptr);
+        if (i.m_FrameFences[f] != VK_NULL_HANDLE)
+            vkDestroyFence(i.m_Device, i.m_FrameFences[f], nullptr);
     }
-    for (auto sem : m_RenderFinishedSemaphores)
+    for (auto sem : i.m_RenderFinishedSemaphores)
     {
         if (sem != VK_NULL_HANDLE)
-            vkDestroySemaphore(m_Device, sem, nullptr);
+            vkDestroySemaphore(i.m_Device, sem, nullptr);
     }
-    m_RenderFinishedSemaphores.clear();
+    i.m_RenderFinishedSemaphores.clear();
 
-    if (m_Swapchain != VK_NULL_HANDLE)
+    if (i.m_Swapchain != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
-        m_Swapchain = VK_NULL_HANDLE;
-    }
-
-    if (m_Device != VK_NULL_HANDLE)
-    {
-        vkDestroyDevice(m_Device, nullptr);
-        m_Device = VK_NULL_HANDLE;
+        vkDestroySwapchainKHR(i.m_Device, i.m_Swapchain, nullptr);
+        i.m_Swapchain = VK_NULL_HANDLE;
     }
 
-    if (ENABLE_VALIDATION && m_DebugMessenger != VK_NULL_HANDLE)
+    if (i.m_Device != VK_NULL_HANDLE)
     {
-        DestroyDebugMessenger(m_Instance, m_DebugMessenger);
-        m_DebugMessenger = VK_NULL_HANDLE;
+        vkDestroyDevice(i.m_Device, nullptr);
+        i.m_Device = VK_NULL_HANDLE;
     }
 
-    if (m_Surface != VK_NULL_HANDLE)
+    if (ENABLE_VALIDATION && i.m_DebugMessenger != VK_NULL_HANDLE)
     {
-        vkDestroySurfaceKHR(m_Instance, m_Surface, nullptr);
-        m_Surface = VK_NULL_HANDLE;
+        DestroyDebugMessenger(i.m_Instance, i.m_DebugMessenger);
+        i.m_DebugMessenger = VK_NULL_HANDLE;
     }
 
-    if (m_Instance != VK_NULL_HANDLE)
+    if (i.m_Surface != VK_NULL_HANDLE)
     {
-        vkDestroyInstance(m_Instance, nullptr);
-        m_Instance = VK_NULL_HANDLE;
+        vkDestroySurfaceKHR(i.m_Instance, i.m_Surface, nullptr);
+        i.m_Surface = VK_NULL_HANDLE;
+    }
+
+    if (i.m_Instance != VK_NULL_HANDLE)
+    {
+        vkDestroyInstance(i.m_Instance, nullptr);
+        i.m_Instance = VK_NULL_HANDLE;
     }
 }
 
 void VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
 {
+    auto& i = *m_Impl;
+
     VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(m_PhysicalDevice, m_Surface, &capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(i.m_PhysicalDevice, i.m_Surface, &capabilities);
 
     uint32_t format_count = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &format_count, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(i.m_PhysicalDevice, i.m_Surface, &format_count, nullptr);
     std::vector<VkSurfaceFormatKHR> formats(format_count);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(m_PhysicalDevice, m_Surface, &format_count, formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(i.m_PhysicalDevice, i.m_Surface, &format_count, formats.data());
 
     uint32_t mode_count = 0;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, m_Surface, &mode_count, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(i.m_PhysicalDevice, i.m_Surface, &mode_count, nullptr);
     std::vector<VkPresentModeKHR> modes(mode_count);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(m_PhysicalDevice, m_Surface, &mode_count, modes.data());
+    vkGetPhysicalDeviceSurfacePresentModesKHR(i.m_PhysicalDevice, i.m_Surface, &mode_count, modes.data());
 
-    VkSurfaceFormatKHR surface_format = ChooseSurfaceFormat(formats);
-    VkPresentModeKHR   present_mode   = ChoosePresentMode(modes);
-    VkExtent2D         extent         = ChooseExtent(capabilities, width, height);
-    m_SwapFormat = surface_format.format;
-    m_SwapExtent = extent;
+    VkSurfaceFormatKHR surface_format = i.ChooseSurfaceFormat(formats);
+    VkPresentModeKHR   present_mode   = i.ChoosePresentMode(modes);
+    VkExtent2D         extent         = i.ChooseExtent(capabilities, width, height);
+    i.m_SwapFormat = surface_format.format;
+    i.m_SwapExtent = extent;
 
     std::cout << "[VulkanDevice] Swapchain " << extent.width << "x" << extent.height << '\n';
     std::cout << "[VulkanDevice]   Image format : " << (int)surface_format.format << '\n';
@@ -239,7 +379,7 @@ void VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
 
     VkSwapchainCreateInfoKHR createInfo = {};
     createInfo.sType            = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface          = m_Surface;
+    createInfo.surface          = i.m_Surface;
     createInfo.minImageCount    = image_count;
     createInfo.imageFormat      = surface_format.format;
     createInfo.imageColorSpace  = surface_format.colorSpace;
@@ -248,8 +388,8 @@ void VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
     // TRANSFER_DST is required by NVRHI's clearTextureFloat (uses vkCmdClearColorImage).
     createInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
-    uint32_t qf_indices[] = { m_Queues.graphics, m_Queues.present };
-    if (m_Queues.graphics != m_Queues.present)
+    uint32_t qf_indices[] = { i.m_Queues.graphics, i.m_Queues.present };
+    if (i.m_Queues.graphics != i.m_Queues.present)
     {
         createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
@@ -265,35 +405,38 @@ void VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
     createInfo.presentMode    = present_mode;
     createInfo.clipped        = VK_TRUE;
 
-    if (vkCreateSwapchainKHR(m_Device, &createInfo, nullptr, &m_Swapchain) != VK_SUCCESS)
+    if (vkCreateSwapchainKHR(i.m_Device, &createInfo, nullptr, &i.m_Swapchain) != VK_SUCCESS)
     {
         std::cerr << "[VulkanDevice] vkCreateSwapchainKHR failed\n";
         abort();
     }
 
-    vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &image_count, nullptr);
-    m_SwapImages.resize(image_count);
-    vkGetSwapchainImagesKHR(m_Device, m_Swapchain, &image_count, m_SwapImages.data());
+    vkGetSwapchainImagesKHR(i.m_Device, i.m_Swapchain, &image_count, nullptr);
+    i.m_SwapImages.resize(image_count);
+    vkGetSwapchainImagesKHR(i.m_Device, i.m_Swapchain, &image_count, i.m_SwapImages.data());
 
-    CreateHandleForNativeTextures();
+    i.CreateHandleForNativeTextures();
 
-    // Do not recreate sync objects in case of window resize
-    // They are not tied to the swapchain and can be reused
-    if(m_RenderFinishedSemaphores.size() == 0)
-		CreateSyncObjects();
+    // Do not recreate sync objects on window resize — they are not tied to
+    // the swapchain and can be reused.
+    if (i.m_RenderFinishedSemaphores.empty())
+        i.CreateSyncObjects();
 }
 
 void VulkanDevice::RecreateSwapchain(uint32_t width, uint32_t height)
 {
-    m_NvrhiDevice->waitForIdle();
+    auto& i = *m_Impl;
 
-    m_BackBuffers.clear();
-    m_SwapImages.clear();
+    i.m_NvrhiDevice->waitForIdle();
 
-    if (m_Swapchain != VK_NULL_HANDLE)
+    i.m_GpuDevice->ClearBackBuffers();
+    i.m_BackBuffers.clear();
+    i.m_SwapImages.clear();
+
+    if (i.m_Swapchain != VK_NULL_HANDLE)
     {
-        vkDestroySwapchainKHR(m_Device, m_Swapchain, nullptr);
-        m_Swapchain = VK_NULL_HANDLE;
+        vkDestroySwapchainKHR(i.m_Device, i.m_Swapchain, nullptr);
+        i.m_Swapchain = VK_NULL_HANDLE;
     }
 
     CreateSwapchain(width, height);
@@ -301,37 +444,41 @@ void VulkanDevice::RecreateSwapchain(uint32_t width, uint32_t height)
 
 void VulkanDevice::BeginFrame()
 {
+    auto& i = *m_Impl;
+
     // Wait for the previous use of this frame slot to finish on the GPU before
     // reusing its image-available semaphore (which may still have a pending
     // wait operation from the prior frame that used this slot).
-    vkWaitForFences(m_Device, 1, &m_FrameFences[m_CurrentFrame], VK_TRUE, UINT64_MAX);
-    vkResetFences(m_Device, 1, &m_FrameFences[m_CurrentFrame]);
+    vkWaitForFences(i.m_Device, 1, &i.m_FrameFences[i.m_CurrentFrame], VK_TRUE, UINT64_MAX);
+    vkResetFences(i.m_Device, 1, &i.m_FrameFences[i.m_CurrentFrame]);
 
-    vkAcquireNextImageKHR(m_Device, m_Swapchain, UINT64_MAX,
-        m_ImageAvailableSemaphores[m_CurrentFrame], VK_NULL_HANDLE, &m_CurrentFrameIdx);
+    vkAcquireNextImageKHR(i.m_Device, i.m_Swapchain, UINT64_MAX,
+        i.m_ImageAvailableSemaphores[i.m_CurrentFrame], VK_NULL_HANDLE, &i.m_CurrentFrameIdx);
 
     // Both semaphore operations must be registered BEFORE executeCommandList so
     // that NVRHI includes them in the same vkQueueSubmit as the command buffer.
-    m_NvrhiDevice->queueWaitForSemaphore(
+    i.m_NvrhiDevice->queueWaitForSemaphore(
         nvrhi::CommandQueue::Graphics,
-        m_ImageAvailableSemaphores[m_CurrentFrame], 0);
+        i.m_ImageAvailableSemaphores[i.m_CurrentFrame], 0);
 
-    m_NvrhiDevice->queueSignalSemaphore(
+    i.m_NvrhiDevice->queueSignalSemaphore(
         nvrhi::CommandQueue::Graphics,
-        m_RenderFinishedSemaphores[m_CurrentFrameIdx], 0);
+        i.m_RenderFinishedSemaphores[i.m_CurrentFrameIdx], 0);
 }
 
 void VulkanDevice::Present()
 {
+    auto& i = *m_Impl;
+
     // The render-finished semaphore was registered in BeginFrame and is
     // signaled as part of the executeCommandList vkQueueSubmit above.
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType              = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores    = &m_RenderFinishedSemaphores[m_CurrentFrameIdx];
+    presentInfo.pWaitSemaphores    = &i.m_RenderFinishedSemaphores[i.m_CurrentFrameIdx];
     presentInfo.swapchainCount     = 1;
-    presentInfo.pSwapchains        = &m_Swapchain;
-    presentInfo.pImageIndices      = &m_CurrentFrameIdx;
+    presentInfo.pSwapchains        = &i.m_Swapchain;
+    presentInfo.pImageIndices      = &i.m_CurrentFrameIdx;
 
     // Submit an empty batch to the graphics queue with the per-frame fence.
     // Being queued after NVRHI's submit (on the same queue), it signals the
@@ -339,28 +486,37 @@ void VulkanDevice::Present()
     // waits on this fence before reusing the image-available semaphore slot.
     VkSubmitInfo fenceSubmit = {};
     fenceSubmit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    vkQueueSubmit(m_GraphicsQueue, 1, &fenceSubmit, m_FrameFences[m_CurrentFrame]);
+    vkQueueSubmit(i.m_GraphicsQueue, 1, &fenceSubmit, i.m_FrameFences[i.m_CurrentFrame]);
 
-    VkResult result = vkQueuePresentKHR(m_PresentQueue, &presentInfo);
+    VkResult result = vkQueuePresentKHR(i.m_PresentQueue, &presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
     {
         std::cout << "[VulkanDevice] Swapchain out of date; recreating\n";
-        RecreateSwapchain(m_SwapExtent.width, m_SwapExtent.height);
+        RecreateSwapchain(i.m_SwapExtent.width, i.m_SwapExtent.height);
     }
     else if (result != VK_SUCCESS)
     {
         std::cerr << "[VulkanDevice] vkQueuePresentKHR failed: " << result << '\n';
     }
 
-    m_CurrentFrame = (m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+    i.m_CurrentFrame = (i.m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
 // =========================================================================
-// Init steps
+// Accessors
 // =========================================================================
 
-void VulkanDevice::CreateInstance()
+uint32_t VulkanDevice::GetCurrentImageIndex() const
+{
+    return m_Impl->m_CurrentFrameIdx;
+}
+
+// =========================================================================
+// Impl — init steps
+// =========================================================================
+
+void VulkanDevice::Impl::CreateInstance()
 {
     // Initialize the Vulkan-HPP dynamic dispatcher with the statically-linked
     // vkGetInstanceProcAddr so that pre-instance global functions are reachable.
@@ -430,7 +586,7 @@ void VulkanDevice::CreateInstance()
     std::cout << "[VulkanDevice] Vulkan instance created (API 1.3)\n";
 }
 
-void VulkanDevice::SetupDebugMessenger()
+void VulkanDevice::Impl::SetupDebugMessenger()
 {
     VkDebugUtilsMessengerCreateInfoEXT info = {};
     PopulateDebugMessengerInfo(info);
@@ -439,7 +595,7 @@ void VulkanDevice::SetupDebugMessenger()
         std::cerr << "[VulkanDevice] Failed to create debug messenger\n";
 }
 
-void VulkanDevice::CreateSurface()
+void VulkanDevice::Impl::CreateSurface()
 {
     if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS)
     {
@@ -448,7 +604,7 @@ void VulkanDevice::CreateSurface()
     }
 }
 
-void VulkanDevice::PickPhysicalDevice()
+void VulkanDevice::Impl::PickPhysicalDevice()
 {
     uint32_t count = 0;
     vkEnumeratePhysicalDevices(m_Instance, &count, nullptr);
@@ -500,7 +656,7 @@ void VulkanDevice::PickPhysicalDevice()
     std::cout << "[VulkanDevice]   Max 2D : " << chosen.limits.maxImageDimension2D << "px\n";
 }
 
-void VulkanDevice::CreateLogicalDevice()
+void VulkanDevice::Impl::CreateLogicalDevice()
 {
     m_Queues = FindQueueFamilies(m_PhysicalDevice);
 
@@ -551,13 +707,13 @@ void VulkanDevice::CreateLogicalDevice()
     }
 
     VkPhysicalDeviceVulkan12Features features12 = {};
-    features12.sType                                    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
-    features12.bufferDeviceAddress                      = VK_TRUE;
-    features12.timelineSemaphore                        = VK_TRUE;
-    features12.descriptorIndexing                       = VK_TRUE;
-    features12.runtimeDescriptorArray                   = VK_TRUE;
-    features12.descriptorBindingPartiallyBound          = VK_TRUE;
-    features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
+    features12.sType                                     = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+    features12.bufferDeviceAddress                       = VK_TRUE;
+    features12.timelineSemaphore                         = VK_TRUE;
+    features12.descriptorIndexing                        = VK_TRUE;
+    features12.runtimeDescriptorArray                    = VK_TRUE;
+    features12.descriptorBindingPartiallyBound           = VK_TRUE;
+    features12.descriptorBindingVariableDescriptorCount  = VK_TRUE;
     features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
 
     VkPhysicalDeviceVulkan13Features features13 = {};
@@ -612,10 +768,10 @@ void VulkanDevice::CreateLogicalDevice()
 }
 
 // =========================================================================
-// Physical-device helpers
+// Impl — physical-device helpers
 // =========================================================================
 
-QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device) const
+QueueFamilyIndices VulkanDevice::Impl::FindQueueFamilies(VkPhysicalDevice device) const
 {
     QueueFamilyIndices indices;
 
@@ -649,7 +805,51 @@ QueueFamilyIndices VulkanDevice::FindQueueFamilies(VkPhysicalDevice device) cons
     return indices;
 }
 
-VkSurfaceFormatKHR VulkanDevice::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
+bool VulkanDevice::Impl::CheckExtensionSupport(VkPhysicalDevice device) const
+{
+    uint32_t count = 0;
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
+    std::vector<VkExtensionProperties> available(count);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &count, available.data());
+
+    for (const char* required : REQUIRED_DEVICE_EXTENSIONS)
+    {
+        bool found = false;
+        for (const auto& ext : available)
+            if (strcmp(required, ext.extensionName) == 0) { found = true; break; }
+        if (!found) return false;
+    }
+    return true;
+}
+
+bool VulkanDevice::Impl::IsDeviceSuitable(VkPhysicalDevice device) const
+{
+    if (!FindQueueFamilies(device).IsComplete()) return false;
+    if (!CheckExtensionSupport(device))          return false;
+
+    uint32_t formatCount = 0, modeCount = 0;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &modeCount, nullptr);
+    return formatCount > 0 && modeCount > 0;
+}
+
+int VulkanDevice::Impl::ScoreDevice(VkPhysicalDevice device) const
+{
+    VkPhysicalDeviceProperties props;
+    vkGetPhysicalDeviceProperties(device, &props);
+
+    int score = 0;
+    if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)   score += 10000;
+    if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) score += 1000;
+    score += static_cast<int>(props.limits.maxImageDimension2D / 1024);
+    return score;
+}
+
+// =========================================================================
+// Impl — swapchain helpers
+// =========================================================================
+
+VkSurfaceFormatKHR VulkanDevice::Impl::ChooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& formats)
 {
     for (const auto& f : formats)
         if (f.format == VK_FORMAT_B8G8R8A8_SRGB && f.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
@@ -657,14 +857,14 @@ VkSurfaceFormatKHR VulkanDevice::ChooseSurfaceFormat(const std::vector<VkSurface
     return formats[0];
 }
 
-VkPresentModeKHR VulkanDevice::ChoosePresentMode(const std::vector<VkPresentModeKHR>& modes)
+VkPresentModeKHR VulkanDevice::Impl::ChoosePresentMode(const std::vector<VkPresentModeKHR>& modes)
 {
     for (const auto& m : modes)
         if (m == VK_PRESENT_MODE_MAILBOX_KHR) return m;
     return modes[0];
 }
 
-VkExtent2D VulkanDevice::ChooseExtent(const VkSurfaceCapabilitiesKHR& caps, uint32_t width, uint32_t height)
+VkExtent2D VulkanDevice::Impl::ChooseExtent(const VkSurfaceCapabilitiesKHR& caps, uint32_t width, uint32_t height)
 {
     if (caps.currentExtent.width != UINT32_MAX)
         return caps.currentExtent;
@@ -675,7 +875,7 @@ VkExtent2D VulkanDevice::ChooseExtent(const VkSurfaceCapabilitiesKHR& caps, uint
     return extent;
 }
 
-void VulkanDevice::CreateSyncObjects()
+void VulkanDevice::Impl::CreateSyncObjects()
 {
     VkSemaphoreCreateInfo info = {};
     info.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -684,14 +884,14 @@ void VulkanDevice::CreateSyncObjects()
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT; // pre-signaled so BeginFrame doesn't stall on frame 0
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i)
+    for (size_t f = 0; f < MAX_FRAMES_IN_FLIGHT; ++f)
     {
-        if (vkCreateSemaphore(m_Device, &info, nullptr, &m_ImageAvailableSemaphores[i]) != VK_SUCCESS)
+        if (vkCreateSemaphore(m_Device, &info, nullptr, &m_ImageAvailableSemaphores[f]) != VK_SUCCESS)
         {
             std::cerr << "[VulkanDevice] Failed to create image-available semaphores\n";
             abort();
         }
-        if (vkCreateFence(m_Device, &fenceInfo, nullptr, &m_FrameFences[i]) != VK_SUCCESS)
+        if (vkCreateFence(m_Device, &fenceInfo, nullptr, &m_FrameFences[f]) != VK_SUCCESS)
         {
             std::cerr << "[VulkanDevice] Failed to create frame fences\n";
             abort();
@@ -711,7 +911,7 @@ void VulkanDevice::CreateSyncObjects()
     }
 }
 
-nvrhi::Format VulkanDevice::ToNvrhiFormat(VkFormat format) const
+nvrhi::Format VulkanDevice::Impl::ToNvrhiFormat(VkFormat format) const
 {
     switch (format)
     {
@@ -726,7 +926,7 @@ nvrhi::Format VulkanDevice::ToNvrhiFormat(VkFormat format) const
     }
 }
 
-void VulkanDevice::CreateHandleForNativeTextures()
+void VulkanDevice::Impl::CreateHandleForNativeTextures()
 {
     nvrhi::TextureDesc desc;
     desc.width            = m_SwapExtent.width;
@@ -738,75 +938,12 @@ void VulkanDevice::CreateHandleForNativeTextures()
     desc.keepInitialState = true;
 
     m_BackBuffers.resize(m_SwapImages.size());
-    for (size_t i = 0; i < m_SwapImages.size(); ++i)
+    for (size_t idx = 0; idx < m_SwapImages.size(); ++idx)
     {
-		nvrhi::Object nativeImage(m_SwapImages[i]);
-        nativeImage.integer = reinterpret_cast<uint64_t>(m_SwapImages[i]);
-        m_BackBuffers[i] = m_NvrhiDevice->createHandleForNativeTexture(
+        nvrhi::Object nativeImage(m_SwapImages[idx]);
+        nativeImage.integer = reinterpret_cast<uint64_t>(m_SwapImages[idx]);
+        m_BackBuffers[idx] = m_NvrhiDevice->createHandleForNativeTexture(
             nvrhi::ObjectTypes::VK_Image, nativeImage, desc);
     }
-}
-
-bool VulkanDevice::CheckExtensionSupport(VkPhysicalDevice device) const
-{
-    uint32_t count = 0;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &count, nullptr);
-    std::vector<VkExtensionProperties> available(count);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &count, available.data());
-
-    for (const char* required : REQUIRED_DEVICE_EXTENSIONS)
-    {
-        bool found = false;
-        for (const auto& ext : available)
-            if (strcmp(required, ext.extensionName) == 0) { found = true; break; }
-        if (!found) return false;
-    }
-    return true;
-}
-
-bool VulkanDevice::IsDeviceSuitable(VkPhysicalDevice device) const
-{
-    if (!FindQueueFamilies(device).IsComplete()) return false;
-    if (!CheckExtensionSupport(device))          return false;
-
-    uint32_t formatCount = 0, modeCount = 0;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_Surface, &formatCount, nullptr);
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_Surface, &modeCount, nullptr);
-    return formatCount > 0 && modeCount > 0;
-}
-
-int VulkanDevice::ScoreDevice(VkPhysicalDevice device) const
-{
-    VkPhysicalDeviceProperties props;
-    vkGetPhysicalDeviceProperties(device, &props);
-
-    int score = 0;
-    if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)   score += 10000;
-    if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU) score += 1000;
-    score += static_cast<int>(props.limits.maxImageDimension2D / 1024);
-    return score;
-}
-
-// =========================================================================
-// NVRHI message callback
-// =========================================================================
-
-void VulkanDevice::MessageCallback::message(nvrhi::MessageSeverity severity, const char* text)
-{
-    switch (severity)
-    {
-    case nvrhi::MessageSeverity::Fatal:
-        std::cerr << "[NVRHI] " << text << '\n';
-        abort();
-        break;
-    case nvrhi::MessageSeverity::Error:
-        std::cerr << "[NVRHI] " << text << '\n';
-        break;
-    case nvrhi::MessageSeverity::Warning:
-        std::cerr << "[NVRHI] " << text << '\n';
-        break;
-    case nvrhi::MessageSeverity::Info:
-        std::cout << "[NVRHI] " << text << '\n';
-        break;
-    }
+    m_GpuDevice->RegisterBackBuffers(m_BackBuffers);
 }

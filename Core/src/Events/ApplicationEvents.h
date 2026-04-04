@@ -2,7 +2,7 @@
 #define APPLICATION_EVENTS_H
 
 #include "Event.h"
-#include "../IWindowSystem.h"
+#include "../Window/IWindowSystem.h"
 
 class WindowCloseEvent : public Event
 {
