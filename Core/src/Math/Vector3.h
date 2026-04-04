@@ -25,6 +25,22 @@ public:
 		Vector3 res = Vector3(x + scalar, y + scalar, z + scalar);
 		return res;
 	}
+	
+	Vector3 operator+=(const Vector3& other)
+	{
+		x += other.x;
+		y += other.y;
+		z += other.z;
+		return *this;
+	}
+
+	Vector3 operator+=(float scalar)
+	{
+		x += scalar;
+		y += scalar;
+		z += scalar;
+		return *this;
+	}
 
 	// Subtraction operator overload
 		Vector3 operator-(const Vector3& other) const
@@ -39,6 +55,22 @@ public:
 		return res;
 	}
 
+	Vector3 operator-=(const Vector3& other)
+	{
+		x -= other.x;
+		y -= other.y;
+		z -= other.z;
+		return *this;
+	}
+
+	Vector3 operator-=(float scalar)
+	{
+		x -= scalar;
+		y -= scalar;
+		z -= scalar;
+		return *this;
+	}
+
 	Vector3 operator-() const // Unary negation
 	{
 		Vector3 res = Vector3(-x, -y, -z);
@@ -51,10 +83,54 @@ public:
 		return res;
 	}
 
+	Vector3 operator*(const Vector3& other) const
+	{
+		Vector3 res = Vector3(x * other.x, y * other.y, z * other.z);
+		return res;
+	}
+
+	Vector3 operator*=(float scalar)
+	{
+		x *= scalar;
+		y *= scalar;
+		z *= scalar;
+		return *this;
+	}
+
+	Vector3 operator*=(const Vector3& other)
+	{
+		x *= other.x;
+		y *= other.y;
+		z *= other.z;
+		return *this;
+	}
+
 	Vector3 operator/(float scalar) const
 	{
 		Vector3 res = Vector3(x / scalar, y / scalar, z / scalar);
 		return res;
+	}
+
+	Vector3 operator/(const Vector3& other) const
+	{
+		Vector3 res = Vector3(x / other.x, y / other.y, z / other.z);
+		return res;
+	}
+
+	Vector3 operator/=(float scalar)
+	{
+		x /= scalar;
+		y /= scalar;
+		z /= scalar;
+		return *this;
+	}
+
+	Vector3 operator/=(const Vector3& other)
+	{
+		x /= other.x;
+		y /= other.y;
+		z /= other.z;
+		return *this;
 	}
 
 	bool operator==(const Vector3& other) const
@@ -65,6 +141,17 @@ public:
 	bool operator!=(const Vector3& other) const
 	{
 		return !(*this == other);
+	}
+
+	// Element access
+	float& operator[](int i)
+	{
+		switch (i) { case 0: return x; case 1: return y; default: return z; }
+	}
+
+	float operator[](int i) const
+	{
+		switch (i) { case 0: return x; case 1: return y; default: return z; }
 	}
 
 	// Normalize

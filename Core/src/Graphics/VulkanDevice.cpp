@@ -8,7 +8,6 @@
 #include <GLFW/glfw3.h>
 #include <nvrhi/vulkan.h>
 
-#include <iostream>
 #include <array>
 #include <vector>
 #include <algorithm>
@@ -53,11 +52,11 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     const char* msg = data->pMessage;
 
     if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-		CORE_ERROR("{} ", msg);
+        LOG_ERROR_TO("vulkan", "{}", msg);
     else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-		CORE_ERROR("{} ", msg);
+        LOG_WARN_TO("vulkan", "{}", msg);
     else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
-        CORE_INFO("{}", msg);
+        LOG_INFO_TO("vulkan", "{}", msg);
 
     return VK_FALSE;
 }
@@ -127,17 +126,17 @@ void MessageCallback::message(nvrhi::MessageSeverity severity, const char* text)
     switch (severity)
     {
     case nvrhi::MessageSeverity::Fatal:
-		CORE_ERROR(text);
+        LOG_FATAL_TO("vulkan", "{}", text);
         abort();
         break;
     case nvrhi::MessageSeverity::Error:
-		CORE_ERROR(text);
+        LOG_ERROR_TO("vulkan", "{}", text);
         break;
     case nvrhi::MessageSeverity::Warning:
-		CORE_ERROR(text);
+        LOG_WARN_TO("vulkan", "{}", text);
         break;
     case nvrhi::MessageSeverity::Info:
-        CORE_INFO(text);
+        LOG_INFO_TO("vulkan", "{}", text);
         break;
     }
 }
@@ -273,11 +272,11 @@ IGpuDevice* VulkanDevice::CreateDevice()
     i.m_NvrhiDevice = nvrhi::vulkan::createDevice(desc);
     if (!i.m_NvrhiDevice)
     {
-        std::cerr << "[VulkanDevice] nvrhi::vulkan::createDevice() returned null\n";
+        LOG_FATAL_TO("vulkan", "nvrhi::vulkan::createDevice() returned null");
         abort();
     }
 
-    std::cout << "[VulkanDevice] NVRHI Vulkan device created\n";
+    LOG_INFO_TO("vulkan", "NVRHI Vulkan device created");
     i.m_GpuDevice = std::make_unique<NvrhiGpuDevice>(i.m_NvrhiDevice.Get());
     return i.m_GpuDevice.get();
 }
@@ -364,14 +363,13 @@ void VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
     i.m_SwapFormat = surface_format.format;
     i.m_SwapExtent = extent;
 
-    std::cout << "[VulkanDevice] Swapchain " << extent.width << "x" << extent.height << '\n';
-    std::cout << "[VulkanDevice]   Image format : " << (int)surface_format.format << '\n';
-    std::cout << "[VulkanDevice]   Color space  : " << (int)surface_format.colorSpace << '\n';
-    std::cout << "[VulkanDevice]   Present mode : "
-              << (present_mode == VK_PRESENT_MODE_MAILBOX_KHR  ? "mailbox (triple-buffer)" :
-                  present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "immediate (no vsync)"   :
-                                                                   "fifo (vsync)")
-              << '\n';
+    LOG_INFO_TO("vulkan", "Swapchain {}x{}", extent.width, extent.height);
+    LOG_INFO_TO("vulkan", "  Image format : {}", (int)surface_format.format);
+    LOG_INFO_TO("vulkan", "  Color space  : {}", (int)surface_format.colorSpace);
+    LOG_INFO_TO("vulkan", "  Present mode : {}",
+        present_mode == VK_PRESENT_MODE_MAILBOX_KHR   ? "mailbox (triple-buffer)" :
+        present_mode == VK_PRESENT_MODE_IMMEDIATE_KHR ? "immediate (no vsync)"    :
+                                                        "fifo (vsync)");
 
     uint32_t image_count = capabilities.minImageCount + 1;
     if (capabilities.maxImageCount > 0)
@@ -407,7 +405,7 @@ void VulkanDevice::CreateSwapchain(uint32_t width, uint32_t height)
 
     if (vkCreateSwapchainKHR(i.m_Device, &createInfo, nullptr, &i.m_Swapchain) != VK_SUCCESS)
     {
-        std::cerr << "[VulkanDevice] vkCreateSwapchainKHR failed\n";
+        LOG_FATAL_TO("vulkan", "vkCreateSwapchainKHR failed");
         abort();
     }
 
@@ -492,12 +490,12 @@ void VulkanDevice::Present()
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
     {
-        std::cout << "[VulkanDevice] Swapchain out of date; recreating\n";
+        LOG_INFO_TO("vulkan", "Swapchain out of date; recreating");
         RecreateSwapchain(i.m_SwapExtent.width, i.m_SwapExtent.height);
     }
     else if (result != VK_SUCCESS)
     {
-        std::cerr << "[VulkanDevice] vkQueuePresentKHR failed: " << result << '\n';
+        LOG_ERROR_TO("vulkan", "vkQueuePresentKHR failed: {}", (int)result);
     }
 
     i.m_CurrentFrame = (i.m_CurrentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -537,8 +535,7 @@ void VulkanDevice::Impl::CreateInstance()
 
             if (!found)
             {
-                std::cerr << "[VulkanDevice] Validation layer '" << name
-                          << "' not available. Install the Vulkan SDK or build in Release.\n";
+                LOG_FATAL_TO("vulkan", "Validation layer '{}' not available. Install the Vulkan SDK or build in Release.", name);
                 abort();
             }
         }
@@ -576,14 +573,14 @@ void VulkanDevice::Impl::CreateInstance()
 
     if (vkCreateInstance(&createInfo, nullptr, &m_Instance) != VK_SUCCESS)
     {
-        std::cerr << "[VulkanDevice] vkCreateInstance failed\n";
+        LOG_FATAL_TO("vulkan", "vkCreateInstance failed");
         abort();
     }
 
     // Load instance-level extension functions into the dispatcher.
     VULKAN_HPP_DEFAULT_DISPATCHER.init(m_Instance, ::vkGetInstanceProcAddr);
 
-    std::cout << "[VulkanDevice] Vulkan instance created (API 1.3)\n";
+    LOG_INFO_TO("vulkan", "Vulkan instance created (API 1.3)");
 }
 
 void VulkanDevice::Impl::SetupDebugMessenger()
@@ -592,14 +589,14 @@ void VulkanDevice::Impl::SetupDebugMessenger()
     PopulateDebugMessengerInfo(info);
 
     if (CreateDebugMessenger(m_Instance, &info, &m_DebugMessenger) != VK_SUCCESS)
-        std::cerr << "[VulkanDevice] Failed to create debug messenger\n";
+        LOG_WARN_TO("vulkan", "Failed to create debug messenger");
 }
 
 void VulkanDevice::Impl::CreateSurface()
 {
     if (glfwCreateWindowSurface(m_Instance, m_Window, nullptr, &m_Surface) != VK_SUCCESS)
     {
-        std::cerr << "[VulkanDevice] glfwCreateWindowSurface failed\n";
+        LOG_FATAL_TO("vulkan", "glfwCreateWindowSurface failed");
         abort();
     }
 }
@@ -610,7 +607,7 @@ void VulkanDevice::Impl::PickPhysicalDevice()
     vkEnumeratePhysicalDevices(m_Instance, &count, nullptr);
     if (count == 0)
     {
-        std::cerr << "[VulkanDevice] No Vulkan-capable GPUs found on this system\n";
+        LOG_FATAL_TO("vulkan", "No Vulkan-capable GPUs found on this system");
         abort();
     }
     std::vector<VkPhysicalDevice> devices(count);
@@ -624,13 +621,12 @@ void VulkanDevice::Impl::PickPhysicalDevice()
 
         if (!IsDeviceSuitable(d))
         {
-            std::cout << "[VulkanDevice]   Skipping (unsuitable): " << props.deviceName << '\n';
+            LOG_TRACE_TO("vulkan", "Skipping (unsuitable): {}", props.deviceName);
             continue;
         }
 
         int score = ScoreDevice(d);
-        std::cout << "[VulkanDevice]   Candidate: " << props.deviceName
-                  << " (score=" << score << ")\n";
+        LOG_INFO_TO("vulkan", "Candidate: {} (score={})", props.deviceName, score);
 
         if (score > bestScore)
         {
@@ -641,19 +637,18 @@ void VulkanDevice::Impl::PickPhysicalDevice()
 
     if (m_PhysicalDevice == VK_NULL_HANDLE)
     {
-        std::cerr << "[VulkanDevice] No suitable GPU found — "
-                     "requires swapchain support and graphics + present queues\n";
+        LOG_FATAL_TO("vulkan", "No suitable GPU found — requires swapchain support and graphics + present queues");
         abort();
     }
 
     VkPhysicalDeviceProperties chosen = {};
     vkGetPhysicalDeviceProperties(m_PhysicalDevice, &chosen);
-    std::cout << "[VulkanDevice] Using GPU: " << chosen.deviceName << '\n';
-    std::cout << "[VulkanDevice]   API    : "
-              << VK_VERSION_MAJOR(chosen.apiVersion) << '.'
-              << VK_VERSION_MINOR(chosen.apiVersion) << '.'
-              << VK_VERSION_PATCH(chosen.apiVersion) << '\n';
-    std::cout << "[VulkanDevice]   Max 2D : " << chosen.limits.maxImageDimension2D << "px\n";
+    LOG_INFO_TO("vulkan", "Using GPU: {}", chosen.deviceName);
+    LOG_INFO_TO("vulkan", "  API    : {}.{}.{}",
+        VK_VERSION_MAJOR(chosen.apiVersion),
+        VK_VERSION_MINOR(chosen.apiVersion),
+        VK_VERSION_PATCH(chosen.apiVersion));
+    LOG_INFO_TO("vulkan", "  Max 2D : {}px", chosen.limits.maxImageDimension2D);
 }
 
 void VulkanDevice::Impl::CreateLogicalDevice()
@@ -700,7 +695,7 @@ void VulkanDevice::Impl::CreateLogicalDevice()
             if (strcmp(opt, ext.extensionName) == 0)
             {
                 m_DeviceExtensions.push_back(opt);
-                std::cout << "[VulkanDevice] Enabling optional extension: " << opt << '\n';
+                LOG_INFO_TO("vulkan", "Enabling optional extension: {}", opt);
                 break;
             }
         }
@@ -746,7 +741,7 @@ void VulkanDevice::Impl::CreateLogicalDevice()
 
     if (vkCreateDevice(m_PhysicalDevice, &createInfo, nullptr, &m_Device) != VK_SUCCESS)
     {
-        std::cerr << "[VulkanDevice] vkCreateDevice failed\n";
+        LOG_FATAL_TO("vulkan", "vkCreateDevice failed");
         abort();
     }
 
@@ -758,13 +753,13 @@ void VulkanDevice::Impl::CreateLogicalDevice()
     vkGetDeviceQueue(m_Device, m_Queues.transfer, 0, &m_TransferQueue);
     vkGetDeviceQueue(m_Device, m_Queues.compute,  0, &m_ComputeQueue);
 
-    std::cout << "[VulkanDevice] Logical device created\n";
-    std::cout << "[VulkanDevice]   Graphics : family " << m_Queues.graphics << '\n';
-    std::cout << "[VulkanDevice]   Present  : family " << m_Queues.present  << '\n';
-    std::cout << "[VulkanDevice]   Transfer : family " << m_Queues.transfer
-              << (m_Queues.transfer == m_Queues.graphics ? " (shared with graphics)" : "") << '\n';
-    std::cout << "[VulkanDevice]   Compute  : family " << m_Queues.compute
-              << (m_Queues.compute  == m_Queues.graphics ? " (shared with graphics)" : "") << '\n';
+    LOG_INFO_TO("vulkan", "Logical device created");
+    LOG_INFO_TO("vulkan", "  Graphics : family {}", m_Queues.graphics);
+    LOG_INFO_TO("vulkan", "  Present  : family {}", m_Queues.present);
+    LOG_INFO_TO("vulkan", "  Transfer : family {}{}", m_Queues.transfer,
+        m_Queues.transfer == m_Queues.graphics ? " (shared with graphics)" : "");
+    LOG_INFO_TO("vulkan", "  Compute  : family {}{}", m_Queues.compute,
+        m_Queues.compute == m_Queues.graphics ? " (shared with graphics)" : "");
 }
 
 // =========================================================================
@@ -888,12 +883,12 @@ void VulkanDevice::Impl::CreateSyncObjects()
     {
         if (vkCreateSemaphore(m_Device, &info, nullptr, &m_ImageAvailableSemaphores[f]) != VK_SUCCESS)
         {
-            std::cerr << "[VulkanDevice] Failed to create image-available semaphores\n";
+            LOG_FATAL_TO("vulkan", "Failed to create image-available semaphores");
             abort();
         }
         if (vkCreateFence(m_Device, &fenceInfo, nullptr, &m_FrameFences[f]) != VK_SUCCESS)
         {
-            std::cerr << "[VulkanDevice] Failed to create frame fences\n";
+            LOG_FATAL_TO("vulkan", "Failed to create frame fences");
             abort();
         }
     }
@@ -905,7 +900,7 @@ void VulkanDevice::Impl::CreateSyncObjects()
     {
         if (vkCreateSemaphore(m_Device, &info, nullptr, &sem) != VK_SUCCESS)
         {
-            std::cerr << "[VulkanDevice] Failed to create render-finished semaphores\n";
+            LOG_FATAL_TO("vulkan", "Failed to create render-finished semaphores");
             abort();
         }
     }
@@ -920,8 +915,7 @@ nvrhi::Format VulkanDevice::Impl::ToNvrhiFormat(VkFormat format) const
     case VK_FORMAT_R8G8B8A8_UNORM: return nvrhi::Format::RGBA8_UNORM;
     case VK_FORMAT_R8G8B8A8_SRGB:  return nvrhi::Format::SRGBA8_UNORM;
     default:
-        std::cerr << "[VulkanDevice] Unrecognized swapchain format "
-                  << static_cast<int>(format) << ", defaulting to RGBA8_UNORM\n";
+        LOG_WARN_TO("vulkan", "Unrecognized swapchain format {}, defaulting to RGBA8_UNORM", (int)format);
         return nvrhi::Format::RGBA8_UNORM;
     }
 }

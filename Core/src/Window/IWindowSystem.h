@@ -1,13 +1,19 @@
 #ifndef IWINDOWSYSTEM_H
 #define IWINDOWSYSTEM_H
 
-#include <glm/glm.hpp>
 #include "../Util/Handle.h"
 
+#include <cstdint>
 #include <string>
 
 struct WindowTag {};
 using WindowHandle = Handle<WindowTag>;
+
+struct WindowExtent
+{
+	uint32_t x = 0;
+	uint32_t y = 0;
+};
 
 struct WindowDesc
 {
@@ -24,7 +30,7 @@ public:
 	virtual WindowHandle	OpenWindow(const WindowDesc& desc) = 0;
 	virtual void			CloseWindow(WindowHandle handle) = 0;
 
-	virtual glm::uvec2		GetExtent(WindowHandle handle) const = 0;
+	virtual WindowExtent	GetExtent(WindowHandle handle) const = 0;
 	virtual void*			GetNativeHandle(WindowHandle handle) const = 0;
 	virtual bool			ShouldClose(WindowHandle handle) const = 0;
 

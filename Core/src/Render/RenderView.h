@@ -2,22 +2,22 @@
 #define RENDER_VIEW_H
 
 #include "GpuTypes.h"
-#include <glm/glm.hpp>
+#include "Math/Matrix4x4.h"
 #include <vector>
 
 struct RenderObject
 {
-    GpuBuffer vertexBuffer;
-    GpuBuffer indexBuffer;
-    uint32_t  indexCount;
-    glm::mat4 model;
+    GpuBuffer VertexBuffer;
+    GpuBuffer IndexBuffer;
+    uint32_t  IndexCount;
+    Matrix4x4 Model;
 };
 
 struct RenderView
 {
-    glm::mat4 view;
-    glm::mat4 proj;
-    std::vector<RenderObject*> visibleObjects;
+    Matrix4x4                  View;
+    Matrix4x4                  Projection;
+    std::vector<RenderObject*> VisibleObjects;
 };
 
 #endif // RENDER_VIEW_H

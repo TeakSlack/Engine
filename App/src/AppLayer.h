@@ -8,7 +8,7 @@
 #include <Render/IGpuDevice.h>
 #include <Render/ICommandContext.h>
 
-#include <glm/glm.hpp>
+#include <Math/Vector3.h>
 
 #include <memory>
 #include <vector>
@@ -48,19 +48,19 @@ private:
 	GLFWwindow*    m_GlfwWindow = nullptr;
 
 	// ---- Camera ----
-	glm::vec3 m_CamPos    = { 0.f, 0.f,  3.f };
-	float     m_CamYaw    = -90.f;
-	float     m_CamPitch  =   0.f;
-	float     m_MoveSpeed =   3.f;
-	float     m_MouseSens =  0.12f;
+	Vector3 m_CamPos    = { 0.f, 0.f, 3.f };
+	float   m_CamYaw    = -90.f;
+	float   m_CamPitch  =   0.f;
+	float   m_MoveSpeed =   3.f;
+	float   m_MouseSens =  0.12f;
 
 	// ---- Input state ----
-	bool      m_Keys[512]  = {};
-	bool      m_RmbHeld    = false;
-	float     m_LastMouseX = 0.f;
-	float     m_LastMouseY = 0.f;
-	bool      m_FirstMouse = true;
-	glm::vec3 m_CamVel     = { 0.f, 0.f, 0.f };
+	bool    m_Keys[512]  = {};
+	bool    m_RmbHeld    = false;
+	float   m_LastMouseX = 0.f;
+	float   m_LastMouseY = 0.f;
+	bool    m_FirstMouse = true;
+	Vector3 m_CamVel;
 
 	// ---- Render ----
 	RenderBackend                         m_ActiveBackend = RenderBackend::None;

@@ -3,56 +3,66 @@
 
 #include <entt/entt.hpp>
 #include <cstdint>
+#include "Util/UUID.h"
 
-class Scene; // forward declare — full definition in Scene.h
+class Scene;
+class SceneManager;
+
+using SceneID = UUID;
 
 // -------------------------------------------------------------------------
 // Entity — a typed handle into an entt::registry owned by a Scene.
 //
-// Template method bodies are defined at the bottom of Scene.h (after the
-// full Scene definition), so include Scene.h to use component operations.
+// Stores a SceneID (UUID) rather than a raw Scene* so that entities remain
+// safe to hold across scene transitions; IsValid() returns false if the
+// scene has been destroyed.
 //
-// C# interop: use GetRawID() to exchange entity identity across the managed
-// boundary. uint32_t maps directly to C# uint / System.UInt32.
+// Template method bodies are defined at the bottom of SceneManager.h (after
+// the full SceneManager definition), so include SceneManager.h to use
+// component operations.
+//
+// C# interop: GetRawID() and GetSceneID().Value() both map to uint64_t /
+// System.UInt64 across the managed boundary.
 // -------------------------------------------------------------------------
 class Entity
 {
 public:
-	Entity() = default;
-	Entity(entt::entity id, Scene* scene) : m_EntityID(id), m_Scene(scene) {}
+    Entity() = default;
+    Entity(entt::entity id, SceneID sceneID) : m_EntityID(id), m_SceneID(sceneID) {}
 
-	template<typename T, typename... Args>
-	T& AddComponent(Args&&... args);
+    template<typename T, typename... Args>
+    T& AddComponent(Args&&... args);
 
-	template<typename T>
-	T& GetComponent();
+    template<typename T>
+    T& GetComponent();
 
-	template<typename T>
-	const T& GetComponent() const;
+    template<typename T>
+    const T& GetComponent() const;
 
-	template<typename T>
-	bool HasComponent() const;
+    template<typename T>
+    bool HasComponent() const;
 
-	template<typename T>
-	void RemoveComponent();
+    template<typename T>
+    void RemoveComponent();
 
-	// IsValid() is defined inline at the bottom of Scene.h.
-	bool IsValid() const;
+    // Defined inline at the bottom of SceneManager.h.
+    bool IsValid() const;
 
-	entt::entity GetID()    const { return m_EntityID; }
-	uint32_t     GetRawID() const { return static_cast<uint32_t>(m_EntityID); }
+    entt::entity GetID()      const { return m_EntityID; }
+    SceneID      GetSceneID() const { return m_SceneID; }
+    uint32_t     GetRawID()   const { return static_cast<uint32_t>(m_EntityID); }
 
-	explicit operator bool() const { return IsValid(); }
+    explicit operator bool() const { return IsValid(); }
 
-	bool operator==(const Entity& other) const = default;
+    bool operator==(const Entity& other) const = default;
 
-	static Entity Null() { return Entity{}; }
+    static Entity Null() { return Entity{}; }
 
 private:
-	entt::entity m_EntityID = entt::null;
-	Scene*       m_Scene    = nullptr;
+    entt::entity m_EntityID = entt::null;
+    SceneID      m_SceneID;   // default-constructed UUID is invalid (value 0)
 
-	friend class Scene;
+    friend class Scene;
 };
 
 #endif // ENTITY_H

@@ -3,6 +3,9 @@
 
 #include <spdlog/spdlog.h>
 #include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 class Log
 {
@@ -19,7 +22,7 @@ private:
 	Log() = default;
 
 	// Default core and app loggers are created at startup; additional sub-loggers are created on demand.
-	std::vector<std::shared_ptr<spdlog::logger>> m_Loggers;
+	std::unordered_map<std::string, std::shared_ptr<spdlog::logger>> m_Loggers;
 	std::vector<spdlog::sink_ptr> m_Sinks; // shared across all loggers
 };
 

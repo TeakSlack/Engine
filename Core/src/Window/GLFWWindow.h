@@ -21,7 +21,7 @@ public:
 	WindowHandle	OpenWindow(const WindowDesc& desc)			override;
 	void			CloseWindow(WindowHandle handle)			override;
 
-	glm::uvec2		GetExtent(WindowHandle handle)		const	override;
+	WindowExtent	GetExtent(WindowHandle handle)		const	override;
 	void*			GetNativeHandle(WindowHandle handle)const	override;
 	bool			ShouldClose(WindowHandle handle)	const	override;
 	double			GetTime()							const	override;

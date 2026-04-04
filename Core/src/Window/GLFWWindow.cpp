@@ -101,14 +101,14 @@ void GLFWWindowSystem::CloseWindow(WindowHandle handle)
 	m_Windows.Remove(handle);
 }
 
-glm::uvec2 GLFWWindowSystem::GetExtent(WindowHandle handle) const
+WindowExtent GLFWWindowSystem::GetExtent(WindowHandle handle) const
 {
 	const WindowEntry* entry = m_Windows.Get(handle);
 	if (!entry) return {};
 
 	int w, h;
 	glfwGetFramebufferSize(entry->glfwWindow, &w, &h);
-	return { static_cast<unsigned int>(w), static_cast<unsigned int>(h) };
+	return { static_cast<uint32_t>(w), static_cast<uint32_t>(h) };
 }
 
 void* GLFWWindowSystem::GetNativeHandle(WindowHandle handle) const

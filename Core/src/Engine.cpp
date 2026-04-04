@@ -1,7 +1,7 @@
 #include "Engine.h"
 #include "Events/ApplicationEvents.h"
-#include "Window/IWindowSystem.h"
 #include "Util/Log.h"
+#include <chrono>
 
 Engine& Engine::Get()
 {
@@ -54,22 +54,13 @@ void Engine::Run()
     for (auto* layer : m_LayerStack)
         layer->OnAttach();
 
-    // Find the first registered submodule that implements IWindowSystem
-    // and use it as the clock source for deltaTime.
-    IWindowSystem* clock = nullptr;
-    for (auto* sub : m_Submodules)
-    {
-        if ((clock = dynamic_cast<IWindowSystem*>(sub)))
-            break;
-    }
-
-    float lastFrameTime = clock ? static_cast<float>(clock->GetTime()) : 0.0f;
+    auto lastFrameTime = std::chrono::steady_clock::now();
 
     while (m_Running)
     {
-        float time      = clock ? static_cast<float>(clock->GetTime()) : 0.0f;
-        float deltaTime = time - lastFrameTime;
-        lastFrameTime   = time;
+        auto  now       = std::chrono::steady_clock::now();
+        float deltaTime = std::chrono::duration<float>(now - lastFrameTime).count();
+        lastFrameTime   = now;
 
         // Tick all submodules (input, audio, physics, etc.)
         for (auto* sub : m_Submodules)

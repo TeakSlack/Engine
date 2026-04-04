@@ -24,6 +24,20 @@ public:
 		return Vector2(x + scalar, y + scalar);
 	}
 
+	Vector2 operator+=(const Vector2& other)
+	{
+		x += other.x;
+		y += other.y;
+		return *this;
+	}
+
+	Vector2 operator+=(const float scalar)
+	{
+		x += scalar;
+		y += scalar;
+		return *this;
+	}
+
 	// Subtraction operator overload
 	Vector2 operator-(const Vector2& other) const
 	{
@@ -35,16 +49,68 @@ public:
 		return Vector2(x - scalar, y - scalar);
 	}
 
+	Vector2 operator-=(const Vector2& other)
+	{
+		x -= other.x;
+		y -= other.y;
+		return *this;
+	}
+
+	Vector2 operator-=(const float scalar)
+	{
+		x -= scalar;
+		y -= scalar;
+		return *this;
+	}
+
 	// Multiplication operator overload
 	Vector2 operator*(const float scalar) const
 	{
 		return Vector2(x * scalar, y * scalar);
 	}
 
+	Vector2 operator*(const Vector2& other) const
+	{
+		return Vector2(x * other.x, y * other.y);
+	}
+
+	Vector2 operator*=(const float scalar)
+	{
+		x *= scalar;
+		y *= scalar;
+		return *this;
+	}
+
+	Vector2 operator*=(const Vector2& other)
+	{
+		x *= other.x;
+		y *= other.y;
+		return *this;
+	}
+
 	// Division operator overload
 	Vector2 operator/(const float scalar) const
 	{
 		return Vector2(x / scalar, y / scalar);
+	}
+
+	Vector2 operator/(const Vector2& other) const
+	{
+		return Vector2(x / other.x, y / other.y);
+	}
+
+	Vector2 operator/=(const float scalar)
+	{
+		x /= scalar;
+		y /= scalar;
+		return *this;
+	}
+
+	Vector2 operator/=(const Vector2& other)
+	{
+		x /= other.x;
+		y /= other.y;
+		return *this;
 	}
 
 	// Unary negation operator overload
@@ -64,8 +130,14 @@ public:
 		return !(*this == other);
 	}
 
+	// Element access
+	float& operator[](int i)
+	{
+		switch (i) { case 0: return x; default: return y; }
+	}
+	
 	// Magnitude
-	float Magnitude()
+	float Magnitude() const
 	{
 		return std::hypotf(x, y);
 	}
@@ -102,7 +174,7 @@ public:
 	}
 
 	// Dot product
-	float Dot(const Vector2& other)
+	float Dot(const Vector2& other) const
 	{
 		float x2 = x * other.x;
 		float y2 = y * other.y;
@@ -112,7 +184,7 @@ public:
 
 	static float Dot(const Vector2& a, const Vector2& b)
 	{
-		float x2 = a.x * b.y;
+		float x2 = a.x * b.x;
 		float y2 = a.y * b.y;
 
 		return x2 + y2;

@@ -94,7 +94,6 @@ add_library(VendorIncludes INTERFACE)
 target_include_directories(VendorIncludes INTERFACE
     $<$<BOOL:${CORE_VULKAN}>:${Vulkan_INCLUDE_DIRS}>
     ${CMAKE_SOURCE_DIR}/vendor/spdlog/include
-    ${CMAKE_SOURCE_DIR}/vendor/glm
     ${CMAKE_SOURCE_DIR}/vendor/NVRHI/include
     ${CMAKE_SOURCE_DIR}/vendor/entt/src
 )

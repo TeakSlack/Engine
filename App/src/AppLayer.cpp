@@ -24,11 +24,12 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 #include <GLFW/glfw3.h>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <Math/Vector3.h>
+#include <Math/Matrix4x4.h>
+#include <Util/Log.h>
 
-#include <iostream>
+#include <algorithm>
+#include <cmath>
 #include <fstream>
 
 
@@ -78,7 +79,7 @@ std::vector<uint8_t> AppLayer::LoadSPIRV(const char* path)
 	std::ifstream file(path, std::ios::binary | std::ios::ate);
 	if (!file)
 	{
-		std::cerr << "[AppLayer] Cannot open shader: " << path << "\n";
+		APP_ERROR("Cannot open shader: {}", path);
 		return {};
 	}
 	auto size = static_cast<size_t>(file.tellg());
@@ -98,7 +99,7 @@ std::unique_ptr<IRenderDevice> AppLayer::MakeRenderDevice(RenderBackend backend)
 	if (backend == RenderBackend::D3D12)
 		return std::make_unique<D3D12Device>(m_WindowSystem.GetNativeHandle(m_WindowHandle));
 #endif
-	std::cerr << "[AppLayer] Requested backend is not compiled in.\n";
+	APP_FATAL("Requested backend is not compiled in");
 	abort();
 }
 
@@ -270,8 +271,7 @@ void AppLayer::SwitchBackend(RenderBackend next)
 
 	InitGpuResources();
 
-	std::cout << "[AppLayer] Backend switched to "
-	          << (next == RenderBackend::Vulkan ? "Vulkan" : "D3D12") << "\n";
+	APP_INFO("Backend switched to {}", next == RenderBackend::Vulkan ? "Vulkan" : "D3D12");
 }
 
 // -------------------------------------------------------------------------
@@ -369,15 +369,16 @@ void AppLayer::OnUpdate(float deltaTime)
 	auto [fbWidth, fbHeight] = m_GpuDevice->GetFramebufferSize(fb);
 
 	// ---- Camera basis ----
-	glm::vec3 front;
-	front.x = cos(glm::radians(m_CamYaw)) * cos(glm::radians(m_CamPitch));
-	front.y = sin(glm::radians(m_CamPitch));
-	front.z = sin(glm::radians(m_CamYaw)) * cos(glm::radians(m_CamPitch));
-	front = glm::normalize(front);
-	glm::vec3 right = glm::normalize(glm::cross(front, glm::vec3(0.f, 1.f, 0.f)));
+	constexpr float kDeg2Rad = 3.14159265358979f / 180.0f;
+	Vector3 front;
+	front.x = std::cosf(m_CamYaw * kDeg2Rad) * std::cosf(m_CamPitch * kDeg2Rad);
+	front.y = std::sinf(m_CamPitch * kDeg2Rad);
+	front.z = std::sinf(m_CamYaw * kDeg2Rad) * std::cosf(m_CamPitch * kDeg2Rad);
+	front = Vector3::Normalize(front);
+	Vector3 right = Vector3::Normalize(Vector3::Cross(front, Vector3(0.f, 1.f, 0.f)));
 
 	// ---- Quake-style velocity movement ----
-	glm::vec3 wishDir = glm::vec3(0.f);
+	Vector3 wishDir;
 	if (m_Keys[GLFW_KEY_W]) wishDir += front;
 	if (m_Keys[GLFW_KEY_S]) wishDir -= front;
 	if (m_Keys[GLFW_KEY_D]) wishDir += right;
@@ -386,33 +387,32 @@ void AppLayer::OnUpdate(float deltaTime)
 	if (m_Keys[GLFW_KEY_Q]) wishDir.y -= 1.f;
 
 	float wishSpeed = m_MoveSpeed * (m_Keys[GLFW_KEY_LEFT_SHIFT] ? 3.f : 1.f);
-	if (glm::length(wishDir) > 0.f)
-		wishDir = glm::normalize(wishDir);
+	if (Vector3::Magnitude(wishDir) > 0.f)
+		wishDir = Vector3::Normalize(wishDir);
 
 	// Friction — exponential decay, frame-rate independent
 	constexpr float friction = 7.f;
-	float speed = glm::length(m_CamVel);
+	float speed = Vector3::Magnitude(m_CamVel);
 	if (speed > 0.001f)
-		m_CamVel *= glm::max(speed - friction * speed * deltaTime, 0.f) / speed;
+		m_CamVel *= std::max(speed - friction * speed * deltaTime, 0.f) / speed;
 
 	// Acceleration — only add velocity in the wish direction up to wishSpeed
 	constexpr float accel = 25.f;
-	float currentSpeed = glm::dot(m_CamVel, wishDir);
+	float currentSpeed = Vector3::Dot(m_CamVel, wishDir);
 	float addSpeed = wishSpeed - currentSpeed;
 	if (addSpeed > 0.f)
-		m_CamVel += wishDir * glm::min(accel * deltaTime * wishSpeed, addSpeed);
+		m_CamVel += wishDir * std::min(accel * deltaTime * wishSpeed, addSpeed);
 
 	m_CamPos += m_CamVel * deltaTime;
 
-	glm::mat4 model      = glm::mat4(1.f);
-	glm::mat4 view       = glm::lookAt(m_CamPos, m_CamPos + front, glm::vec3(0.f, 1.f, 0.f));
-	glm::mat4 projection = glm::perspective(
-		glm::radians(60.0f),
-		(float)fbWidth / (float)fbHeight,
-		0.1f, 500.0f
-	);
+	// Row-vector convention: mvp = model * view * projection.
+	// My row-major storage produces the same bytes as GLM's column-major,
+	// so the existing shaders work unchanged.
+	Matrix4x4 model      = Matrix4x4::Identity();
+	Matrix4x4 view       = Matrix4x4::LookAt(m_CamPos, m_CamPos + front, Vector3(0.f, 1.f, 0.f));
+	Matrix4x4 projection = Matrix4x4::Perspective(60.0f, (float)fbWidth / (float)fbHeight, 0.1f, 500.0f);
 	projection[1][1] *= m_RenderDevice->GetClipSpaceYSign();
-	glm::mat4 mvp = projection * view * model;
+	Matrix4x4 mvp = model * view * projection;
 
 	// ---- Record ----
 	m_CommandContext->Open();
@@ -529,14 +529,14 @@ void AppLayer::OnEvent(Event& event)
 		m_LastMouseY = e.GetY();
 
 		m_CamYaw   += dx;
-		m_CamPitch  = glm::clamp(m_CamPitch + dy, -89.f, 89.f);
+		m_CamPitch  = std::clamp(m_CamPitch + dy, -89.f, 89.f);
 		return false;
 	});
 
 	d.Dispatch<MouseScrolledEvent>([this](MouseScrolledEvent& e)
 	{
 		if (!m_RmbHeld) return false;
-		m_MoveSpeed = glm::clamp(m_MoveSpeed + e.GetYOffset() * 0.5f, 0.5f, 50.f);
+		m_MoveSpeed = std::clamp(m_MoveSpeed + e.GetYOffset() * 0.5f, 0.5f, 50.f);
 		return false;
 	});
 }
