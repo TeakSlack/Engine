@@ -14,102 +14,102 @@ public:
 	Vector2() : x(0.0f), y(0.0f) {}
 
 	// Addition operator overload
-	Vector2 operator+(const Vector2& other) const
+	Vector2 operator+(const Vector2& rhs) const
 	{
-		return Vector2(x + other.x, y + other.y);
+		return Vector2(x + rhs.x, y + rhs.y);
 	}
 
-	Vector2 operator+(const float scalar) const
+	Vector2 operator+(const float rhs) const
 	{
-		return Vector2(x + scalar, y + scalar);
+		return Vector2(x + rhs, y + rhs);
 	}
 
-	Vector2 operator+=(const Vector2& other)
+	Vector2& operator+=(const Vector2& rhs)
 	{
-		x += other.x;
-		y += other.y;
+		x += rhs.x;
+		y += rhs.y;
 		return *this;
 	}
 
-	Vector2 operator+=(const float scalar)
+	Vector2& operator+=(const float rhs)
 	{
-		x += scalar;
-		y += scalar;
+		x += rhs;
+		y += rhs;
 		return *this;
 	}
 
 	// Subtraction operator overload
-	Vector2 operator-(const Vector2& other) const
+	Vector2 operator-(const Vector2& rhs) const
 	{
-		return Vector2(x - other.x, y - other.y);
+		return Vector2(x - rhs.x, y - rhs.y);
 	}
 
-	Vector2 operator-(const float scalar) const
+	Vector2 operator-(const float rhs) const
 	{
-		return Vector2(x - scalar, y - scalar);
+		return Vector2(x - rhs, y - rhs);
 	}
 
-	Vector2 operator-=(const Vector2& other)
+	Vector2& operator-=(const Vector2& rhs)
 	{
-		x -= other.x;
-		y -= other.y;
+		x -= rhs.x;
+		y -= rhs.y;
 		return *this;
 	}
 
-	Vector2 operator-=(const float scalar)
+	Vector2& operator-=(const float rhs)
 	{
-		x -= scalar;
-		y -= scalar;
+		x -= rhs;
+		y -= rhs;
 		return *this;
 	}
 
 	// Multiplication operator overload
-	Vector2 operator*(const float scalar) const
+	Vector2 operator*(const float rhs) const
 	{
-		return Vector2(x * scalar, y * scalar);
+		return Vector2(x * rhs, y * rhs);
 	}
 
-	Vector2 operator*(const Vector2& other) const
+	Vector2 operator*(const Vector2& rhs) const
 	{
-		return Vector2(x * other.x, y * other.y);
+		return Vector2(x * rhs.x, y * rhs.y);
 	}
 
-	Vector2 operator*=(const float scalar)
+	Vector2& operator*=(const float rhs)
 	{
-		x *= scalar;
-		y *= scalar;
+		x *= rhs;
+		y *= rhs;
 		return *this;
 	}
 
-	Vector2 operator*=(const Vector2& other)
+	Vector2& operator*=(const Vector2& rhs)
 	{
-		x *= other.x;
-		y *= other.y;
+		x *= rhs.x;
+		y *= rhs.y;
 		return *this;
 	}
 
 	// Division operator overload
-	Vector2 operator/(const float scalar) const
+	Vector2 operator/(const float rhs) const
 	{
-		return Vector2(x / scalar, y / scalar);
+		return Vector2(x / rhs, y / rhs);
 	}
 
-	Vector2 operator/(const Vector2& other) const
+	Vector2 operator/(const Vector2& rhs) const
 	{
-		return Vector2(x / other.x, y / other.y);
+		return Vector2(x / rhs.x, y / rhs.y);
 	}
 
-	Vector2 operator/=(const float scalar)
+	Vector2& operator/=(const float rhs)
 	{
-		x /= scalar;
-		y /= scalar;
+		x /= rhs;
+		y /= rhs;
 		return *this;
 	}
 
-	Vector2 operator/=(const Vector2& other)
+	Vector2& operator/=(const Vector2& rhs)
 	{
-		x /= other.x;
-		y /= other.y;
+		x /= rhs.x;
+		y /= rhs.y;
 		return *this;
 	}
 
@@ -120,14 +120,14 @@ public:
 	}
 
 	// Equality operators
-	bool operator==(const Vector2& other) const
+	bool operator==(const Vector2& rhs) const
 	{
-		return (x == other.x) && (y == other.y);
+		return (x == rhs.x) && (y == rhs.y);
 	}
 
-	bool operator!=(const Vector2& other) const
+	bool operator!=(const Vector2& rhs) const
 	{
-		return !(*this == other);
+		return !(*this == rhs);
 	}
 
 	// Element access
@@ -135,7 +135,7 @@ public:
 	{
 		switch (i) { case 0: return x; default: return y; }
 	}
-	
+
 	// Magnitude
 	float Magnitude() const
 	{

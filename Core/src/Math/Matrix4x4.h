@@ -35,35 +35,35 @@ struct Matrix4x4
     // ---- Arithmetic ----
 
     // Matrix * Matrix
-    Matrix4x4 operator*(const Matrix4x4& other) const
+    Matrix4x4 operator*(const Matrix4x4& rhs) const
     {
         Matrix4x4 result = Zero();
         for (int i = 0; i < 4; ++i)
             for (int j = 0; j < 4; ++j)
                 result.rows[i][j] =
-                    rows[i][0] * other.rows[0][j] +
-                    rows[i][1] * other.rows[1][j] +
-                    rows[i][2] * other.rows[2][j] +
-                    rows[i][3] * other.rows[3][j];
+                    rows[i][0] * rhs.rows[0][j] +
+                    rows[i][1] * rhs.rows[1][j] +
+                    rows[i][2] * rhs.rows[2][j] +
+                    rows[i][3] * rhs.rows[3][j];
         return result;
     }
 
-    Matrix4x4& operator*=(const Matrix4x4& other) { *this = *this * other; return *this; }
+    Matrix4x4& operator*=(const Matrix4x4& rhs) { *this = *this * rhs; return *this; }
 
     // Scalar multiply
-    Matrix4x4 operator*(float s) const
+    Matrix4x4 operator*(float rhs) const
     {
-        return Matrix4x4(rows[0] * s, rows[1] * s, rows[2] * s, rows[3] * s);
+        return Matrix4x4(rows[0] * rhs, rows[1] * rhs, rows[2] * rhs, rows[3] * rhs);
     }
 
     // ---- Comparison ----
 
-    bool operator==(const Matrix4x4& other) const
+    bool operator==(const Matrix4x4& rhs) const
     {
-        return rows[0] == other.rows[0] && rows[1] == other.rows[1]
-            && rows[2] == other.rows[2] && rows[3] == other.rows[3];
+        return rows[0] == rhs.rows[0] && rows[1] == rhs.rows[1]
+            && rows[2] == rhs.rows[2] && rows[3] == rhs.rows[3];
     }
-    bool operator!=(const Matrix4x4& other) const { return !(*this == other); }
+    bool operator!=(const Matrix4x4& rhs) const { return !(*this == rhs); }
 
     // ---- Factory: basic ----
 
@@ -235,13 +235,13 @@ struct Matrix4x4
 // ---- Free functions: vector * matrix (row-vector convention) ----
 
 // Transform a Vector4 by a Matrix4x4 (v * M).
-inline Vector4 operator*(const Vector4& v, const Matrix4x4& m)
+inline Vector4 operator*(const Vector4& lhs, const Matrix4x4& rhs)
 {
     return Vector4(
-        v.x*m.rows[0][0] + v.y*m.rows[1][0] + v.z*m.rows[2][0] + v.w*m.rows[3][0],
-        v.x*m.rows[0][1] + v.y*m.rows[1][1] + v.z*m.rows[2][1] + v.w*m.rows[3][1],
-        v.x*m.rows[0][2] + v.y*m.rows[1][2] + v.z*m.rows[2][2] + v.w*m.rows[3][2],
-        v.x*m.rows[0][3] + v.y*m.rows[1][3] + v.z*m.rows[2][3] + v.w*m.rows[3][3]);
+        lhs.x*rhs.rows[0][0] + lhs.y*rhs.rows[1][0] + lhs.z*rhs.rows[2][0] + lhs.w*rhs.rows[3][0],
+        lhs.x*rhs.rows[0][1] + lhs.y*rhs.rows[1][1] + lhs.z*rhs.rows[2][1] + lhs.w*rhs.rows[3][1],
+        lhs.x*rhs.rows[0][2] + lhs.y*rhs.rows[1][2] + lhs.z*rhs.rows[2][2] + lhs.w*rhs.rows[3][2],
+        lhs.x*rhs.rows[0][3] + lhs.y*rhs.rows[1][3] + lhs.z*rhs.rows[2][3] + lhs.w*rhs.rows[3][3]);
 }
 
 // Transform a point (w=1) — applies translation.

@@ -14,60 +14,60 @@ public:
 	Vector3() : x(0.0f), y(0.0f), z(0.0f) {}
 
 	// Addition operator overload
-	Vector3 operator+(const Vector3& other) const
+	Vector3 operator+(const Vector3& rhs) const
 	{
-		Vector3 res = Vector3(x + other.x, y + other.y, z + other.z);
+		Vector3 res = Vector3(x + rhs.x, y + rhs.y, z + rhs.z);
 		return res;
 	}
 
-	Vector3 operator+(float scalar) const
+	Vector3 operator+(float rhs) const
 	{
-		Vector3 res = Vector3(x + scalar, y + scalar, z + scalar);
+		Vector3 res = Vector3(x + rhs, y + rhs, z + rhs);
 		return res;
 	}
-	
-	Vector3 operator+=(const Vector3& other)
+
+	Vector3& operator+=(const Vector3& rhs)
 	{
-		x += other.x;
-		y += other.y;
-		z += other.z;
+		x += rhs.x;
+		y += rhs.y;
+		z += rhs.z;
 		return *this;
 	}
 
-	Vector3 operator+=(float scalar)
+	Vector3& operator+=(float rhs)
 	{
-		x += scalar;
-		y += scalar;
-		z += scalar;
+		x += rhs;
+		y += rhs;
+		z += rhs;
 		return *this;
 	}
 
 	// Subtraction operator overload
-		Vector3 operator-(const Vector3& other) const
+	Vector3 operator-(const Vector3& rhs) const
 	{
-		Vector3 res = Vector3(x - other.x, y - other.y, z - other.z);
+		Vector3 res = Vector3(x - rhs.x, y - rhs.y, z - rhs.z);
 		return res;
 	}
 
-	Vector3 operator-(float scalar) const
+	Vector3 operator-(float rhs) const
 	{
-		Vector3 res = Vector3(x - scalar, y - scalar, z - scalar);
+		Vector3 res = Vector3(x - rhs, y - rhs, z - rhs);
 		return res;
 	}
 
-	Vector3 operator-=(const Vector3& other)
+	Vector3& operator-=(const Vector3& rhs)
 	{
-		x -= other.x;
-		y -= other.y;
-		z -= other.z;
+		x -= rhs.x;
+		y -= rhs.y;
+		z -= rhs.z;
 		return *this;
 	}
 
-	Vector3 operator-=(float scalar)
+	Vector3& operator-=(float rhs)
 	{
-		x -= scalar;
-		y -= scalar;
-		z -= scalar;
+		x -= rhs;
+		y -= rhs;
+		z -= rhs;
 		return *this;
 	}
 
@@ -77,70 +77,70 @@ public:
 		return res;
 	}
 
-	Vector3 operator*(float scalar) const
+	Vector3 operator*(float rhs) const
 	{
-		Vector3 res = Vector3(x * scalar, y * scalar, z * scalar);
+		Vector3 res = Vector3(x * rhs, y * rhs, z * rhs);
 		return res;
 	}
 
-	Vector3 operator*(const Vector3& other) const
+	Vector3 operator*(const Vector3& rhs) const
 	{
-		Vector3 res = Vector3(x * other.x, y * other.y, z * other.z);
+		Vector3 res = Vector3(x * rhs.x, y * rhs.y, z * rhs.z);
 		return res;
 	}
 
-	Vector3 operator*=(float scalar)
+	Vector3& operator*=(float rhs)
 	{
-		x *= scalar;
-		y *= scalar;
-		z *= scalar;
+		x *= rhs;
+		y *= rhs;
+		z *= rhs;
 		return *this;
 	}
 
-	Vector3 operator*=(const Vector3& other)
+	Vector3& operator*=(const Vector3& rhs)
 	{
-		x *= other.x;
-		y *= other.y;
-		z *= other.z;
+		x *= rhs.x;
+		y *= rhs.y;
+		z *= rhs.z;
 		return *this;
 	}
 
-	Vector3 operator/(float scalar) const
+	Vector3 operator/(float rhs) const
 	{
-		Vector3 res = Vector3(x / scalar, y / scalar, z / scalar);
+		Vector3 res = Vector3(x / rhs, y / rhs, z / rhs);
 		return res;
 	}
 
-	Vector3 operator/(const Vector3& other) const
+	Vector3 operator/(const Vector3& rhs) const
 	{
-		Vector3 res = Vector3(x / other.x, y / other.y, z / other.z);
+		Vector3 res = Vector3(x / rhs.x, y / rhs.y, z / rhs.z);
 		return res;
 	}
 
-	Vector3 operator/=(float scalar)
+	Vector3& operator/=(float rhs)
 	{
-		x /= scalar;
-		y /= scalar;
-		z /= scalar;
+		x /= rhs;
+		y /= rhs;
+		z /= rhs;
 		return *this;
 	}
 
-	Vector3 operator/=(const Vector3& other)
+	Vector3& operator/=(const Vector3& rhs)
 	{
-		x /= other.x;
-		y /= other.y;
-		z /= other.z;
+		x /= rhs.x;
+		y /= rhs.y;
+		z /= rhs.z;
 		return *this;
 	}
 
-	bool operator==(const Vector3& other) const
+	bool operator==(const Vector3& rhs) const
 	{
-		return (x == other.x) && (y == other.y) && (z == other.z);
+		return (x == rhs.x) && (y == rhs.y) && (z == rhs.z);
 	}
 
-	bool operator!=(const Vector3& other) const
+	bool operator!=(const Vector3& rhs) const
 	{
-		return !(*this == other);
+		return !(*this == rhs);
 	}
 
 	// Element access

@@ -14,95 +14,95 @@ public:
 	Vector4(float x, float y, float z, float w) : x(x), y(y), z(z), w(w) {}
 
 	// Addition operator overload (vector and scalar)
-	Vector4 operator+(const Vector4& other) const
+	Vector4 operator+(const Vector4& rhs) const
 	{
-		Vector4 res(x + other.x, y + other.y, z + other.z, w + other.w);
+		Vector4 res(x + rhs.x, y + rhs.y, z + rhs.z, w + rhs.w);
 		return res;
 	}
 
-	Vector4 operator+(const float scalar) const
+	Vector4 operator+(const float rhs) const
 	{
-		Vector4 res(x + scalar, y + scalar, z + scalar, w + scalar);
+		Vector4 res(x + rhs, y + rhs, z + rhs, w + rhs);
 		return res;
 	}
 
-	Vector4 operator+=(const Vector4& other)
+	Vector4& operator+=(const Vector4& rhs)
 	{
-		x += other.x;
-		y += other.y;
-		z += other.z;
-		w += other.w;
+		x += rhs.x;
+		y += rhs.y;
+		z += rhs.z;
+		w += rhs.w;
 		return *this;
 	}
 
-	Vector4 operator+=(const float scalar)
+	Vector4& operator+=(const float rhs)
 	{
-		x += scalar;
-		y += scalar;
-		z += scalar;
-		w += scalar;
+		x += rhs;
+		y += rhs;
+		z += rhs;
+		w += rhs;
 		return *this;
 	}
 
 	// Subtraction operator overload (vector and scalar)
-	Vector4 operator-(const Vector4& other) const
+	Vector4 operator-(const Vector4& rhs) const
 	{
-		Vector4 res(x - other.x, y - other.y, z - other.z, w - other.w);
+		Vector4 res(x - rhs.x, y - rhs.y, z - rhs.z, w - rhs.w);
 		return res;
 	}
 
-	Vector4 operator-(const float scalar) const
+	Vector4 operator-(const float rhs) const
 	{
-		Vector4 res(x - scalar, y - scalar, z - scalar, w - scalar);
+		Vector4 res(x - rhs, y - rhs, z - rhs, w - rhs);
 		return res;
 	}
 
-	Vector4 operator-=(const Vector4& other)
+	Vector4& operator-=(const Vector4& rhs)
 	{
-		x -= other.x;
-		y -= other.y;
-		z -= other.z;
-		w -= other.w;
+		x -= rhs.x;
+		y -= rhs.y;
+		z -= rhs.z;
+		w -= rhs.w;
 		return *this;
 	}
 
-	Vector4 operator-=(const float scalar)
+	Vector4& operator-=(const float rhs)
 	{
-		x -= scalar;
-		y -= scalar;
-		z -= scalar;
-		w -= scalar;
+		x -= rhs;
+		y -= rhs;
+		z -= rhs;
+		w -= rhs;
 		return *this;
 	}
 
 	// Multiplication and division by scalar
-	Vector4 operator*(const float scalar) const
+	Vector4 operator*(const float rhs) const
 	{
-		Vector4 res(x * scalar, y * scalar, z * scalar, w * scalar);
+		Vector4 res(x * rhs, y * rhs, z * rhs, w * rhs);
 		return res;
 	}
 
-	Vector4 operator*=(const float scalar)
+	Vector4& operator*=(const float rhs)
 	{
-		x *= scalar;
-		y *= scalar;
-		z *= scalar;
-		w *= scalar;
+		x *= rhs;
+		y *= rhs;
+		z *= rhs;
+		w *= rhs;
 		return *this;
 	}
 
-	Vector4 operator/(const float scalar) const
+	Vector4 operator/(const float rhs) const
 	{
-		Vector4 res(x / scalar, y / scalar, z / scalar, w / scalar);
+		Vector4 res(x / rhs, y / rhs, z / rhs, w / rhs);
 		return res;
 	}
 
-	Vector4 operator/=(const float scalar)
+	Vector4& operator/=(const float rhs)
 	{
-		x /= scalar;
-		y /= scalar;
-		z /= scalar;
-		w /= scalar;
+		x /= rhs;
+		y /= rhs;
+		z /= rhs;
+		w /= rhs;
 		return *this;
 	}
 
@@ -124,14 +124,14 @@ public:
 	}
 
 	// Equality operators
-	bool operator==(const Vector4& other) const
+	bool operator==(const Vector4& rhs) const
 	{
-		return (x == other.x) && (y == other.y) && (z == other.z) && (w == other.w);
+		return (x == rhs.x) && (y == rhs.y) && (z == rhs.z) && (w == rhs.w);
 	}
 
-	bool operator!=(const Vector4& other) const
+	bool operator!=(const Vector4& rhs) const
 	{
-		return !(*this == other);
+		return !(*this == rhs);
 	}
 
 	// Magnitude
