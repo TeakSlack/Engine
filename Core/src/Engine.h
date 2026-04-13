@@ -60,6 +60,12 @@ public:
     // calls ShutdownSubmodules in reverse registration order.
     void Run();
 
+    // Editor mode — init/tick/shutdown without a blocking loop.
+    // Call EditorInit() once, EditorTick() each frame, EditorShutdown() on exit.
+    void EditorInit();
+    void EditorTick(float deltaTime);
+    void EditorShutdown();
+
     // Inject an event into the layer stack. Call this from platform
     // callbacks (e.g. GLFW window/input callbacks).
     void OnEvent(Event& event);

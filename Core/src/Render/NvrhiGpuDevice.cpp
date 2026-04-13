@@ -153,6 +153,22 @@ static nvrhi::TextureDimension ToNvrhiTexDim(TextureDimension d)
     }
 }
 
+static nvrhi::ResourceStates ToNvrhiResourceState(ResourceLayout layout)
+{
+    switch (layout)
+    {
+    case ResourceLayout::RenderTarget:   return nvrhi::ResourceStates::RenderTarget;
+    case ResourceLayout::DepthWrite:     return nvrhi::ResourceStates::DepthWrite;
+    case ResourceLayout::DepthRead:      return nvrhi::ResourceStates::DepthRead;
+    case ResourceLayout::ShaderResource: return nvrhi::ResourceStates::ShaderResource;
+    case ResourceLayout::UnorderedAccess:return nvrhi::ResourceStates::UnorderedAccess;
+    case ResourceLayout::CopySource:     return nvrhi::ResourceStates::CopySource;
+    case ResourceLayout::CopyDest:       return nvrhi::ResourceStates::CopyDest;
+    case ResourceLayout::Present:        return nvrhi::ResourceStates::Present;
+    default:                             return nvrhi::ResourceStates::Unknown;
+    }
+}
+
 // ============================================================================
 // NvrhiCommandContext — ICommandContext implementation
 // ============================================================================
@@ -357,6 +373,22 @@ public:
     {
         FlushComputeState();
         m_CmdList->dispatchIndirect(byteOffset);
+    }
+
+    // ---- Resource transitions ----
+    void TransitionTexture(GpuTexture texture, ResourceLayout layout) override
+    {
+        m_CmdList->setTextureState(m_Device->GetTexture(texture.id),
+                                    nvrhi::AllSubresources,
+                                    ToNvrhiResourceState(layout));
+        m_CmdList->commitBarriers();
+    }
+
+    void TransitionBuffer(GpuBuffer buffer, ResourceLayout layout) override
+    {
+        m_CmdList->setBufferState(m_Device->GetBuffer(buffer.id),
+                                   ToNvrhiResourceState(layout));
+        m_CmdList->commitBarriers();
     }
 
     // ---- Debug markers ----

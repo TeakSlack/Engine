@@ -4,7 +4,7 @@
 
 void TransientResourceSystem::Acquire(IGpuDevice* device, RGResourceNode* resource)
 {
-	CORE_ASSERT(resource->Culled, "Attemting to acquire a culled resource");
+	CORE_ASSERT(!resource->Culled, "Attempting to acquire a culled resource!");
 
 	if (resource->Kind == RGResourceNode::ResourceKind::Texture)
 	{
@@ -13,7 +13,7 @@ void TransientResourceSystem::Acquire(IGpuDevice* device, RGResourceNode* resour
 	}
 	else
 	{
-		CORE_ASSERT(!resource->ResolvedTexture.IsValid(), "Attempting to acquire an invalid resource!");
+		CORE_ASSERT(!resource->ResolvedBuffer.IsValid(), "Attempting to acquire an invalid resource!");
 		resource->ResolvedBuffer = device->CreateBuffer(resource->BufferDesc);
 	}
 }

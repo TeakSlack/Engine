@@ -83,6 +83,12 @@ public:
                                    uint64_t byteOffset = 0) = 0;
 
     // -----------------------------------------------------------------------
+    // Resource transitions
+    // -----------------------------------------------------------------------
+    virtual void TransitionTexture(GpuTexture texture, ResourceLayout layout) = 0;
+    virtual void TransitionBuffer(GpuBuffer buffer, ResourceLayout layout)    = 0;
+
+    // -----------------------------------------------------------------------
     // Debug markers (no-ops in release)
     // -----------------------------------------------------------------------
     virtual void BeginMarker(const char* name) = 0;

@@ -75,6 +75,28 @@ void Engine::Run()
 }
 
 // -------------------------------------------------------------------------
+// Editor mode lifecycle
+// -------------------------------------------------------------------------
+void Engine::EditorInit()
+{
+    Log::Get().Init();
+    InitSubmodules();
+    m_Running = true;
+}
+
+void Engine::EditorTick(float deltaTime)
+{
+    for (auto* sub : m_Submodules)
+        sub->Tick(deltaTime);
+}
+
+void Engine::EditorShutdown()
+{
+    ShutdownSubmodules();
+    m_Running = false;
+}
+
+// -------------------------------------------------------------------------
 // Event propagation
 // -------------------------------------------------------------------------
 void Engine::OnEvent(Event& event)

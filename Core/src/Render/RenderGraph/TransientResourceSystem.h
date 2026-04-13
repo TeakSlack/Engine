@@ -6,6 +6,7 @@ struct RGResourceNode;
 
 class TransientResourceSystem
 {
+public:
 	void Acquire(IGpuDevice* device, RGResourceNode* resource);
 	void Release(IGpuDevice* device, RGResourceNode* resource);
 };

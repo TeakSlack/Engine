@@ -119,6 +119,22 @@ inline TextureUsage operator|(TextureUsage a, TextureUsage b) { return (TextureU
 inline uint32_t     operator&(TextureUsage a, TextureUsage b) { return  (uint32_t)a & (uint32_t)b; }
 
 // ---------------------------------------------------------------------------
+// Resource layout — used for barrier transitions
+// ---------------------------------------------------------------------------
+enum class ResourceLayout : uint8_t
+{
+    Undefined,
+    RenderTarget,
+    DepthWrite,
+    DepthRead,
+    ShaderResource,
+    UnorderedAccess,
+    CopySource,
+    CopyDest,
+    Present,
+};
+
+// ---------------------------------------------------------------------------
 // Primitive topology, rasterizer, depth-stencil, blend enums
 // ---------------------------------------------------------------------------
 enum class PrimitiveType  { TriangleList, TriangleStrip, PointList, LineList, LineStrip };
