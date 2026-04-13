@@ -10,6 +10,7 @@ struct Vertex
     Vector3 Normal;
     Vector2 TexCoord;
     Vector3 Tangent;
+    float   TangentSign; // +1 or -1 (glTF tangent.w) — determines bitangent handedness
 };
 
 #endif // VERTEX_H

@@ -16,12 +16,17 @@ echo Compiling SPIR-V (Vulkan)...
 %DXC% -T ps_6_0 -E main -spirv -fspv-target-env=vulkan1.1 triangle.ps.hlsl -Fo triangle_frag.spv
 %DXC% -T vs_6_0 -E main -spirv -fspv-target-env=vulkan1.1 mesh.vs.hlsl -Fo mesh_vert.spv
 %DXC% -T ps_6_0 -E main -spirv -fspv-target-env=vulkan1.1 mesh.ps.hlsl -Fo mesh_frag.spv
+%DXC% -T vs_6_0 -E main -spirv -fspv-target-env=vulkan1.1 test.vs.hlsl -Fo test_vert.spv
+%DXC% -T ps_6_0 -E main -spirv -fspv-target-env=vulkan1.1 test.ps.hlsl -Fo test_frag.spv
+
 
 echo Compiling DXIL (D3D12)...
 %DXC% -T vs_6_0 -E main triangle.vs.hlsl -Fo triangle_vert.cso
 %DXC% -T ps_6_0 -E main triangle.ps.hlsl -Fo triangle_frag.cso
 %DXC% -T vs_6_0 -E main mesh.vs.hlsl -Fo mesh_vert.cso
 %DXC% -T ps_6_0 -E main mesh.ps.hlsl -Fo mesh_frag.cso
+%DXC% -T vs_6_0 -E main test.vs.hlsl -Fo test_vert.cso
+%DXC% -T ps_6_0 -E main test.ps.hlsl -Fo test_frag.cso
 
 echo Done.
 pause

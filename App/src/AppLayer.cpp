@@ -76,16 +76,18 @@ void AppLayer::CreatePipelineAndFramebuffers()
 	m_MaterialSets.clear();
 
 	// Binding layout:
-	//   b0 (VS) — MVP matrix
-	//   b1 (PS) — material constants (base color factor)
-	//   t0 (PS) — albedo texture
-	//   s0 (PS) — sampler
+	//   b0 (VS) — PerObject: World, ViewProjection, CameraPosition
+	//   t0 (PS) — albedo
+	//   t1 (PS) — normal map       (binding 3, would collide with s0 — sampler moved to s2)
+	//   t2 (PS) — metallic-roughness
+	//   s2 (PS) — shared sampler   (binding 5, avoids t1 collision)
 	BindingLayoutDesc layoutDesc;
 	layoutDesc.items = {
-		BindingLayoutItem::ConstantBuffer(0, ShaderStage::Vertex),
-		BindingLayoutItem::ConstantBuffer(1, ShaderStage::Pixel),
+		BindingLayoutItem::ConstantBuffer(0, ShaderStage::Vertex | ShaderStage::Pixel),
 		BindingLayoutItem::Texture(0,         ShaderStage::Pixel),
-		BindingLayoutItem::Sampler(0,         ShaderStage::Pixel),
+		BindingLayoutItem::Texture(1,         ShaderStage::Pixel),
+		BindingLayoutItem::Texture(2,         ShaderStage::Pixel),
+		BindingLayoutItem::Sampler(2,         ShaderStage::Pixel),
 	};
 	m_BindingLayout = m_GpuDevice->CreateBindingLayout(layoutDesc);
 
@@ -95,7 +97,7 @@ void AppLayer::CreatePipelineAndFramebuffers()
 		{ "POSITION", GpuFormat::RGB32_FLOAT, 0, (uint32_t)offsetof(Vertex, Position), vertexStride },
 		{ "NORMAL",   GpuFormat::RGB32_FLOAT, 0, (uint32_t)offsetof(Vertex, Normal),   vertexStride },
 		{ "TEXCOORD", GpuFormat::RG32_FLOAT,  0, (uint32_t)offsetof(Vertex, TexCoord), vertexStride },
-		{ "TANGENT",  GpuFormat::RGB32_FLOAT, 0, (uint32_t)offsetof(Vertex, Tangent),  vertexStride },
+		{ "TANGENT",  GpuFormat::RGBA32_FLOAT, 0, (uint32_t)offsetof(Vertex, Tangent),  vertexStride },
 	};
 	m_InputLayout = m_GpuDevice->CreateInputLayout(attribs, m_VertShader);
 
@@ -147,15 +149,15 @@ void AppLayer::InitGpuResources()
 #ifdef COMPILE_WITH_VULKAN
 	if (m_ActiveBackend == RenderBackend::Vulkan)
 	{
-		vertBytes = LoadSPIRV("shaders/mesh_vert.spv");
-		fragBytes = LoadSPIRV("shaders/mesh_frag.spv");
+		vertBytes = LoadSPIRV("shaders/test_vert.spv");
+		fragBytes = LoadSPIRV("shaders/test_frag.spv");
 	}
 #endif
 #ifdef COMPILE_WITH_DX12
 	if (m_ActiveBackend == RenderBackend::D3D12)
 	{
-		vertBytes = LoadSPIRV("shaders/mesh_vert.cso");
-		fragBytes = LoadSPIRV("shaders/mesh_frag.cso");
+		vertBytes = LoadSPIRV("shaders/test_vs.cso");
+		fragBytes = LoadSPIRV("shaders/test_ps.cso");
 	}
 #endif
 
@@ -175,11 +177,11 @@ void AppLayer::InitGpuResources()
 
 	m_CommandContext = m_GpuDevice->CreateCommandContext();
 
-	// b0 — MVP matrix (64 bytes)
+	// b0 — PerObject: World (64) + ViewProjection (64) + CameraPosition (12) + pad (4) + CameraForward (12) + pad (4) = 160 bytes
 	BufferDesc mvpDesc;
-	mvpDesc.byteSize  = sizeof(float) * 16;
+	mvpDesc.byteSize  = sizeof(float) * 40;
 	mvpDesc.usage     = BufferUsage::Constant;
-	mvpDesc.debugName = "MVP Buffer";
+	mvpDesc.debugName = "PerObject Buffer";
 	m_MvpBuffer = m_GpuDevice->CreateBuffer(mvpDesc);
 
 	// b1 — material constants: base color factor (16 bytes)
@@ -219,6 +221,44 @@ void AppLayer::InitGpuResources()
 		m_GpuDevice->WaitForIdle();
 	}
 
+	// Flat normal fallback: (128, 128, 255) decodes to (0, 0, 1) — no perturbation
+	{
+		TextureDesc desc;
+		desc.width     = 1;
+		desc.height    = 1;
+		desc.format    = GpuFormat::RGBA8_UNORM;
+		desc.usage     = TextureUsage::ShaderResource;
+		desc.debugName = "Flat Normal Texture";
+		m_FlatNormalTexture = m_GpuDevice->CreateTexture(desc);
+
+		const uint8_t flatNormal[4] = { 128, 128, 255, 255 };
+		auto uploadCtx = m_GpuDevice->CreateCommandContext();
+		uploadCtx->Open();
+		uploadCtx->WriteTexture(m_FlatNormalTexture, 0, 0, flatNormal, 4);
+		uploadCtx->Close();
+		m_GpuDevice->ExecuteCommandContext(*uploadCtx);
+		m_GpuDevice->WaitForIdle();
+	}
+
+	// Metallic-roughness fallback: G=204 (roughness≈0.8), B=0 (metallic=0) — non-metallic, rough
+	{
+		TextureDesc desc;
+		desc.width     = 1;
+		desc.height    = 1;
+		desc.format    = GpuFormat::RGBA8_UNORM;
+		desc.usage     = TextureUsage::ShaderResource;
+		desc.debugName = "Default MetallicRoughness Texture";
+		m_DefaultMetallicRoughness = m_GpuDevice->CreateTexture(desc);
+
+		const uint8_t mr[4] = { 0, 204, 0, 255 }; // R=unused, G=roughness(0.8), B=metallic(0)
+		auto uploadCtx = m_GpuDevice->CreateCommandContext();
+		uploadCtx->Open();
+		uploadCtx->WriteTexture(m_DefaultMetallicRoughness, 0, 0, mr, 4);
+		uploadCtx->Close();
+		m_GpuDevice->ExecuteCommandContext(*uploadCtx);
+		m_GpuDevice->WaitForIdle();
+	}
+
 	m_SceneRenderer->SetDevice(m_GpuDevice);
 
 	CreatePipelineAndFramebuffers();
@@ -238,7 +278,9 @@ void AppLayer::DestroyGpuResources()
 		m_GpuDevice->DestroyTexture(tex);
 	m_GpuTextures.clear();
 
-	m_GpuDevice->DestroyTexture(m_FallbackTexture);      m_FallbackTexture  = {};
+	m_GpuDevice->DestroyTexture(m_FallbackTexture);           m_FallbackTexture          = {};
+	m_GpuDevice->DestroyTexture(m_FlatNormalTexture);         m_FlatNormalTexture        = {};
+	m_GpuDevice->DestroyTexture(m_DefaultMetallicRoughness);  m_DefaultMetallicRoughness = {};
 	m_GpuDevice->DestroySampler(m_Sampler);              m_Sampler          = {};
 	m_GpuDevice->DestroyBuffer(m_MaterialBuffer);        m_MaterialBuffer   = {};
 	m_GpuDevice->DestroyBuffer(m_MvpBuffer);             m_MvpBuffer        = {};
@@ -293,21 +335,28 @@ GpuBindingSet AppLayer::GetOrCreateMaterialSet(AssetHandle<MaterialAsset> handle
 	if (it != m_MaterialSets.end())
 		return it->second;
 
-	// Resolve albedo — fall back to the 1×1 white texture when absent
-	GpuTexture albedo = m_FallbackTexture;
+	GpuTexture albedo             = m_FallbackTexture;
+	GpuTexture normal             = m_FlatNormalTexture;
+	GpuTexture metallicRoughness  = m_DefaultMetallicRoughness;
+
 	if (handle.IsValid())
 	{
 		MaterialAsset* mat = m_AssetManager->GetAsset(handle);
-		if (mat && mat->AlbedoMap.IsValid())
-			albedo = EnsureTextureUploaded(mat->AlbedoMap);
+		if (mat)
+		{
+			if (mat->AlbedoMap.IsValid())           albedo           = EnsureTextureUploaded(mat->AlbedoMap);
+			if (mat->NormalMap.IsValid())            normal           = EnsureTextureUploaded(mat->NormalMap);
+			if (mat->MetallicRoughnessMap.IsValid()) metallicRoughness= EnsureTextureUploaded(mat->MetallicRoughnessMap);
+		}
 	}
 
 	BindingSetDesc setDesc;
 	setDesc.items = {
 		BindingItem::ConstantBuffer(0, m_MvpBuffer),
-		BindingItem::ConstantBuffer(1, m_MaterialBuffer),
 		BindingItem::Texture(0,         albedo),
-		BindingItem::Sampler(0,         m_Sampler),
+		BindingItem::Texture(1,         normal),
+		BindingItem::Texture(2,         metallicRoughness),
+		BindingItem::Sampler(2,         m_Sampler),
 	};
 	GpuBindingSet set = m_GpuDevice->CreateBindingSet(setDesc, m_BindingLayout);
 	m_MaterialSets.emplace(key, set);
@@ -540,8 +589,18 @@ void AppLayer::OnUpdate(float deltaTime)
 	sr.height = (int)fbHeight;
 	m_CommandContext->SetScissor(sr);
 
-	// Each visible packet gets its own MVP and material constants.
-	struct MaterialCBData { float baseColorFactor[4]; };
+	// PerObject cbuffer layout must match test.vs.hlsl exactly.
+	struct PerObjectData
+	{
+		Matrix4x4 World;
+		Matrix4x4 ViewProjection;
+		float     CameraPosition[3];
+		float     _pad;
+		float     CameraForward[3];
+		float     _pad1;
+	};
+
+	Matrix4x4 viewProjection = view * projection;
 
 	for (const RenderPacket* packet : m_SceneRenderer->GetVisiblePackets())
 	{
@@ -549,23 +608,18 @@ void AppLayer::OnUpdate(float deltaTime)
 		if (!gpuMesh)
 			continue;
 
-		// MVP
-		Matrix4x4 mvp = packet->WorldTransform * view * projection;
-		m_CommandContext->WriteBuffer(m_MvpBuffer, &mvp, sizeof(mvp));
-
-		// Material constants — default to opaque white when no material is set
-		MaterialCBData matCB = { 1.f, 1.f, 1.f, 1.f };
-		if (packet->Material.IsValid())
-		{
-			if (MaterialAsset* mat = m_AssetManager->GetAsset(packet->Material))
-			{
-				matCB.baseColorFactor[0] = mat->BaseColorFactor.x;
-				matCB.baseColorFactor[1] = mat->BaseColorFactor.y;
-				matCB.baseColorFactor[2] = mat->BaseColorFactor.z;
-				matCB.baseColorFactor[3] = mat->BaseColorFactor.w;
-			}
-		}
-		m_CommandContext->WriteBuffer(m_MaterialBuffer, &matCB, sizeof(matCB));
+		PerObjectData perObj;
+		perObj.World             = packet->WorldTransform;
+		perObj.ViewProjection    = viewProjection;
+		perObj.CameraPosition[0] = m_CamPos.x;
+		perObj.CameraPosition[1] = m_CamPos.y;
+		perObj.CameraPosition[2] = m_CamPos.z;
+		perObj._pad              = 0.f;
+		perObj.CameraForward[0]  = front.x;
+		perObj.CameraForward[1]  = front.y;
+		perObj.CameraForward[2]  = front.z;
+		perObj._pad1             = 0.f;
+		m_CommandContext->WriteBuffer(m_MvpBuffer, &perObj, sizeof(perObj));
 
 		// Binding set carries the albedo texture for this material
 		GpuBindingSet bindingSet = GetOrCreateMaterialSet(packet->Material);

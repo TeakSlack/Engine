@@ -204,7 +204,8 @@ static MeshAsset ExtractPrimitive(const fastgltf::Asset& asset,
     {
         fastgltf::iterateAccessorWithIndex<fastgltf::math::fvec4>(asset, asset.accessors[attr->accessorIndex],
             [&](const fastgltf::math::fvec4& t, size_t i) {
-                out.Vertices[i].Tangent = Vector3(t.x(), t.y(), t.z());
+                out.Vertices[i].Tangent     = Vector3(t.x(), t.y(), t.z());
+                out.Vertices[i].TangentSign = t.w();
             });
     }
 

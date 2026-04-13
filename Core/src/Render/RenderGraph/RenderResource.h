@@ -7,13 +7,15 @@
 #include <string>
 #include <functional>
 
+struct PassData;
+
 // 16-bit index and 16-bit version, fits within uint32_t
 struct RGHandle
 {
 	uint16_t Index;
-	uint16_t Version;
+	uint16_t Version = 0xFFFF;
 
-	bool IsValid() const { return Index != 0; }
+	bool IsValid() const { return Index != 0xFFFF ; }
 	bool operator==(const RGHandle&) const = default;
 };
 
@@ -39,6 +41,9 @@ using RGMutableBufferHandle = RGWriteHandle<RGBufferTag>;
 
 struct RGResourceNode
 {
+	enum class ResourceKind : uint8_t { Texture, Buffer };
+
+	ResourceKind Kind;
 	std::string Name;
 	bool Imported = false;
 
@@ -49,8 +54,8 @@ struct RGResourceNode
 
 	bool Culled = false;
 	uint32_t RefCount = 0;
-	uint32_t FirstPassIndex;
-	uint32_t LastPassIndex;
+	uint32_t FirstPassIndex = -1;
+	uint32_t LastPassIndex = -1;
 
 	GpuTexture ResolvedTexture;
 	GpuBuffer ResolvedBuffer;
@@ -98,18 +103,19 @@ private:
 
 struct RGPassNode
 {
-	const std::string Name;
+	std::string Name;
 	bool AsyncCompute = false;
 
 	std::vector<uint16_t> Creates;
 	std::vector<uint16_t> Reads;
 	std::vector<uint16_t> Writes;
+	std::vector<uint16_t> Dependencies;
 
 	bool Culled = false;
 	uint32_t RefCount = 0;
 
 	// ---- Type erased execution callback ----
-	std::function<void(const RenderPassResources&)> ExecuteCallback;
+	std::function<void(const PassData&, const RenderPassResources&, ICommandContext*)> ExecuteCallback;
 };
 
 #endif // RENDER_RESOURCE_H

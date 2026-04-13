@@ -58,7 +58,7 @@ struct GltfObject
 class AssetManager : public IEngineSubmodule
 {
 public:
-    AssetManager() : IEngineSubmodule("AssetSystem") {}
+    AssetManager() : IEngineSubmodule("AssetManager") {}
 
 	void Init() override;
 	void Shutdown() override;

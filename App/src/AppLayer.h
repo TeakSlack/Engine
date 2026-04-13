@@ -89,7 +89,9 @@ private:
 	GpuBuffer                             m_MvpBuffer;         // b0: per-draw MVP matrix
 	GpuBuffer                             m_MaterialBuffer;    // b1: per-draw material constants
 	GpuSampler                            m_Sampler;           // shared linear-wrap sampler
-	GpuTexture                            m_FallbackTexture;   // 1×1 white — used when no albedo map
+	GpuTexture                            m_FallbackTexture;          // 1×1 white — albedo fallback
+	GpuTexture                            m_FlatNormalTexture;        // 1×1 (128,128,255) — flat normal fallback
+	GpuTexture                            m_DefaultMetallicRoughness; // 1×1 (0,204,0) — roughness=0.8, metallic=0
 
 	// Uploaded GPU textures, keyed by AssetID. Survive swapchain resize.
 	std::unordered_map<AssetID, GpuTexture,  std::hash<CoreUUID>> m_GpuTextures;
