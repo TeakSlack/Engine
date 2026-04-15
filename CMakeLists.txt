@@ -93,6 +93,11 @@ set(FASTGLTF_COMPILE_AS_CPP20   ON  CACHE BOOL "" FORCE)
 add_subdirectory(vendor/fastgltf)
 
 # ---------------------------------------------------------------------------
+# nlohmann json
+# ---------------------------------------------------------------------------
+add_subdirectory(vendor/json)
+
+# ---------------------------------------------------------------------------
 # Vendor include interface target
 # Linking against this propagates all third-party include paths.
 # Vulkan SDK headers are only added when the Vulkan backend is on.
