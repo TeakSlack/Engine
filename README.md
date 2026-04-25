@@ -44,6 +44,12 @@ This project only officially supports Windows at the moment.
 
 Select the appropriate startup project (App or your own), build, and run. Ensure your system has the correct GPU drivers installed.
 
+## 🌩 Examples
+
+- Basics
+    - [Clear](Examples/01_Clear/)
+    - [Quad](Examples/02_Quad/)
+
 ## Starting a New Project with Core
 
 ### Project Structure
