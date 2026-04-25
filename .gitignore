@@ -21,3 +21,5 @@ vendor/CMakeCache.txt
 vendor/CMakeFiles
 vendor/fastgltfConfigVersion.cmake
 Editor/obj**
+**.cso
+**.spv

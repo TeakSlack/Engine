@@ -26,9 +26,9 @@ private:
 	void CreateFramebuffers();
 	void DestroyFramebuffers();
 
-	IWindowSystem* m_WindowSystem = nullptr;
-	WindowHandle   m_WindowHandle;
-	GLFWwindow*    m_GlfwWindow = nullptr;
+	IWindowSystem*					 m_WindowSystem = nullptr;
+	WindowHandle					 m_WindowHandle;
+	GLFWwindow*						 m_GlfwWindow = nullptr;
 
 	// ---- Render ----
 	std::unique_ptr<IRenderDevice>   m_RenderDevice;
@@ -36,7 +36,6 @@ private:
 	std::unique_ptr<ICommandContext> m_CommandContext;
 	std::unique_ptr<FrameGraph>      m_FrameGraph;
 
-	GpuTexture                       m_DepthBuffer;
 	std::vector<GpuFramebuffer>      m_Framebuffers;
 
 	bool     m_PendingResize = false;

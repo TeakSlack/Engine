@@ -51,22 +51,12 @@ void AppLayer::CreateFramebuffers()
 	m_Width  = (uint32_t)extent.x;
 	m_Height = (uint32_t)extent.y;
 
-	TextureDesc depthDesc;
-	depthDesc.width                = m_Width;
-	depthDesc.height               = m_Height;
-	depthDesc.format               = GpuFormat::D32;
-	depthDesc.usage                = TextureUsage::DepthStencil;
-	depthDesc.optimizedClearDepth  = 1.0f;
-	depthDesc.debugName            = "DepthBuffer";
-	m_DepthBuffer = m_GpuDevice->CreateTexture(depthDesc);
-
 	const auto& backBuffers = m_GpuDevice->GetBackBufferTextures();
 	m_Framebuffers.reserve(backBuffers.size());
 	for (GpuTexture colorTex : backBuffers)
 	{
 		FramebufferDesc fbDesc;
 		fbDesc.colorAttachments.push_back({ colorTex });
-		fbDesc.depthAttachment = { m_DepthBuffer };
 		m_Framebuffers.push_back(m_GpuDevice->CreateFramebuffer(fbDesc));
 	}
 }
@@ -76,9 +66,6 @@ void AppLayer::DestroyFramebuffers()
 	for (auto fb : m_Framebuffers)
 		m_GpuDevice->DestroyFramebuffer(fb);
 	m_Framebuffers.clear();
-
-	m_GpuDevice->DestroyTexture(m_DepthBuffer);
-	m_DepthBuffer = {};
 }
 
 // -------------------------------------------------------------------------
@@ -164,7 +151,7 @@ void AppLayer::OnUpdate(float deltaTime)
 		bbDesc,
 		m_FrameCount++ == 0 ? ResourceLayout::Undefined : ResourceLayout::Present);
 
-	ClearValue clearColor = HsvToRgb(m_Hue == 1.0f ? m_Hue = 0 : m_Hue += 0.1f * deltaTime, 0.5f, 1.0f);
+	ClearValue clearColor = HsvToRgb(m_Hue == 1.0f ? m_Hue = 0 : m_Hue += 0.1f * deltaTime, 1.0f, 1.0f);
 
 	struct ClearPassData { RGMutableTextureHandle target; };
 	m_FrameGraph->AddCallbackPass<ClearPassData>(

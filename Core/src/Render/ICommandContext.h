@@ -57,7 +57,10 @@ public:
     // -----------------------------------------------------------------------
     virtual void SetGraphicsPipeline(GpuGraphicsPipeline pipeline) = 0;
     virtual void SetViewport(const Viewport& vp) = 0;
+    virtual void SetViewport(float x, float y, float width, float height,
+        float minDepth = 0.0f, float maxDepth = 1.0f) = 0;
     virtual void SetScissor(const ScissorRect& rect) = 0;
+	virtual void SetScissor(int x, int y, int width, int height) = 0;
     virtual void SetVertexBuffer(uint32_t slot, GpuBuffer buffer,
                                   uint64_t byteOffset = 0) = 0;
     virtual void SetIndexBuffer(GpuBuffer buffer, GpuFormat indexFormat,
