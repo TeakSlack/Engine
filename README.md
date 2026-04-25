@@ -228,3 +228,209 @@ void MMyLayer::OnDetach()
 ```
 
 `WaitForIdle` before destroying anything else is critical - the GPU may still be executing commands if not called.
+
+---
+
+## FrameGraph
+
+The FrameGraph is a Frostbite-style render graph. Each pass declares its resource reads and writes in a **setup** lambda; the graph infers barriers, culls unused passes, and manages transient resource lifetimes automatically. The **execute** lambda records GPU commands.
+
+### Resources
+
+Resources are represented as typed, versioned handles. A version bump on every write prevents a pass from accidentally reading a value it already overwrote.
+
+| Handle type | Meaning |
+|---|---|
+| `RGTextureHandle` | Read-only reference (SRV) |
+| `RGMutableTextureHandle` | Read-write reference (RTV / DSV / UAV) |
+| `RGBufferHandle` | Read-only buffer reference |
+| `RGMutableBufferHandle` | Read-write buffer reference |
+
+**Imported** resources are backed by an existing `GpuTexture`/`GpuBuffer` (e.g. swapchain back-buffers). **Transient** resources are allocated by the graph from their first to last use and released immediately after — no manual `Create`/`Destroy` needed.
+
+```cpp
+// Import the current swapchain back-buffer as a mutable resource
+RGMutableTextureHandle backbuffer = m_FG->ImportMutableTexture(
+    m_GpuDevice->GetBackBufferTextures()[imageIdx], bbDesc,
+    m_FrameCount++ == 0 ? ResourceLayout::Undefined : ResourceLayout::Present);
+
+// Create a transient HDR render target — allocated only for the passes that use it
+TextureDesc hdrDesc;
+hdrDesc.width  = m_Width; hdrDesc.height = m_Height;
+hdrDesc.format = GpuFormat::RGBA16_FLOAT;
+hdrDesc.usage  = TextureUsage::RenderTarget | TextureUsage::ShaderResource;
+```
+
+### Declaring a pass
+
+`AddCallbackPass<PassData>` takes a name, a setup lambda, and an execute lambda. It returns a `RenderPass<PassData>&` so subsequent passes can read the written handles out of `pass.data`.
+
+```cpp
+struct MyPassData
+{
+    RGMutableTextureHandle target;
+};
+
+auto& myPass = m_FG->AddCallbackPass<MyPassData>(
+    "MyPass",
+    // Setup — called once during graph construction.
+    // Declare every resource the pass reads or writes.
+    [&](PassBuilder& builder, MyPassData& data)
+    {
+        data.target = builder.WriteTexture(someHandle);
+    },
+    // Execute — called during Execute() if the pass is not culled.
+    // Record GPU commands; res.GetTexture() resolves handles to GpuTexture.
+    [](const MyPassData& data, const RenderPassResources& res, ICommandContext* cmd)
+    {
+        // cmd->BeginRenderPass(...), draws, etc.
+    }
+);
+```
+
+`PassBuilder` methods:
+
+| Method | Access type declared |
+|---|---|
+| `builder.WriteTexture(handle)` | Render target write — returns a new versioned handle |
+| `builder.WriteDepth(handle)` | Depth-stencil write |
+| `builder.ReadTexture(handle)` | Shader resource read |
+| `builder.CreateTexture(desc)` | Allocate a new transient texture |
+| `builder.CreateBuffer(desc)` | Allocate a new transient buffer |
+
+### Pass chaining
+
+Pass B reads the output of pass A by pulling the written handle from `passA.data`:
+
+```cpp
+auto& clearPass = m_FG->AddCallbackPass<ClearPassData>("Clear",
+    [&](PassBuilder& builder, ClearPassData& data) {
+        data.target = builder.WriteTexture(backbuffer);
+    }, ...);
+
+auto& drawPass = m_FG->AddCallbackPass<DrawPassData>("Draw",
+    [&](PassBuilder& builder, DrawPassData& data) {
+        // WriteTexture on the handle returned by the clear pass, not the original backbuffer.
+        // This establishes an explicit ordering dependency.
+        data.target = builder.WriteTexture(clearPass.data.target);
+    }, ...);
+```
+
+Using a stale handle (one whose resource has since been written by another pass) triggers an assert at setup time — the versioning makes it impossible to silently read the wrong data.
+
+### Automatic pass culling
+
+Any pass whose outputs are not consumed by a later pass (or the final present) is automatically marked culled and skipped during `Execute`. This means you can add debug or optional passes without paying for them when they aren't connected to anything.
+
+```cpp
+// This pass writes to a scratch texture nobody reads — it will be culled.
+m_FG->AddCallbackPass<DebugPassData>("UnusedDebugPass",
+    [&](PassBuilder& builder, DebugPassData& data) {
+        data.scratch = builder.WriteTexture(scratchHandle); // no downstream reader
+    }, ...);
+```
+
+### Blackboard
+
+The blackboard is a type-safe heterogeneous map on the graph itself. Use it to share pass output handles between systems that don't have a direct reference to the `RenderPass<>` return value — for example, between a GBuffer producer and a lighting consumer in separate files.
+
+```cpp
+// Producer — GBuffer pass adds its outputs to the blackboard
+struct GBufferBlackboard
+{
+    RGMutableTextureHandle albedo;
+    RGMutableTextureHandle normals;
+    RGMutableTextureHandle depth;
+};
+
+auto& gb = m_FG->GetBlackboard().Add<GBufferBlackboard>();
+
+auto& gbufferPass = m_FG->AddCallbackPass<GBufferPassData>("GBuffer",
+    [&](PassBuilder& builder, GBufferPassData& data) {
+        data.albedo  = builder.WriteTexture(transientAlbedo);
+        data.normals = builder.WriteTexture(transientNormals);
+        data.depth   = builder.WriteDepth(transientDepth);
+        gb.albedo  = data.albedo;   // publish to blackboard
+        gb.normals = data.normals;
+        gb.depth   = data.depth;
+    }, ...);
+
+// Consumer — lighting pass reads from the blackboard without knowing about gbufferPass
+const auto& gb = m_FG->GetBlackboard().Get<GBufferBlackboard>();
+
+m_FG->AddCallbackPass<LightingPassData>("Lighting",
+    [&](PassBuilder& builder, LightingPassData& data) {
+        data.albedo  = builder.ReadTexture(gb.albedo);
+        data.normals = builder.ReadTexture(gb.normals);
+        data.depth   = builder.ReadTexture(gb.depth);
+        data.hdr     = builder.WriteTexture(transientHdr);
+    }, ...);
+```
+
+`blackboard.Has<T>()` lets a pass check whether an optional entry exists before reading it.
+
+### Full multi-pass example
+
+```cpp
+m_FG->Reset();
+m_FG->GetBlackboard().Clear();
+
+// ---- Import swapchain back-buffer ----------------------------------------
+RGMutableTextureHandle backbuffer = m_FG->ImportMutableTexture(
+    m_GpuDevice->GetBackBufferTextures()[imageIdx], bbDesc,
+    m_FrameCount++ == 0 ? ResourceLayout::Undefined : ResourceLayout::Present);
+
+// ---- Transient resources -------------------------------------------------
+TextureDesc hdrDesc;
+hdrDesc.width = m_Width; hdrDesc.height = m_Height;
+hdrDesc.format = GpuFormat::RGBA16_FLOAT;
+hdrDesc.usage  = TextureUsage::RenderTarget | TextureUsage::ShaderResource;
+
+TextureDesc depthDesc;
+depthDesc.width = m_Width; depthDesc.height = m_Height;
+depthDesc.format = GpuFormat::D32;
+depthDesc.usage  = TextureUsage::DepthStencil;
+
+// ---- Forward pass — write to HDR + depth transients ----------------------
+struct ForwardPassData { RGMutableTextureHandle hdr; RGMutableTextureHandle depth; };
+auto& forwardPass = m_FG->AddCallbackPass<ForwardPassData>("Forward",
+    [&](PassBuilder& builder, ForwardPassData& data)
+    {
+        data.hdr   = builder.WriteTexture(builder.CreateTexture(hdrDesc));
+        data.depth = builder.WriteDepth(builder.CreateTexture(depthDesc));
+    },
+    [this](const ForwardPassData& data, const RenderPassResources& res, ICommandContext* cmd)
+    {
+        GpuTexture hdr   = res.GetTexture(data.hdr);
+        GpuTexture depth = res.GetTexture(data.depth);
+        // ... draw scene geometry ...
+    });
+
+// ---- Tonemap pass — read HDR, write to backbuffer ------------------------
+struct TonemapPassData { RGTextureHandle hdr; RGMutableTextureHandle backbuffer; };
+m_FG->AddCallbackPass<TonemapPassData>("Tonemap",
+    [&](PassBuilder& builder, TonemapPassData& data)
+    {
+        data.hdr        = builder.ReadTexture(forwardPass.data.hdr);
+        data.backbuffer = builder.WriteTexture(backbuffer);
+    },
+    [this](const TonemapPassData& data, const RenderPassResources& res, ICommandContext* cmd)
+    {
+        GpuTexture hdr = res.GetTexture(data.hdr);
+        GpuTexture bb  = res.GetTexture(data.backbuffer);
+        // ... full-screen tonemap blit ...
+        cmd->TransitionTexture(bb, ResourceLayout::Present);
+    });
+
+// ---- Compile, execute, present -------------------------------------------
+m_FG->Compile();
+
+m_Cmd->Open();
+m_FG->Execute(m_GpuDevice, m_Cmd.get());
+m_Cmd->Close();
+
+m_GpuDevice->ExecuteCommandContext(*m_Cmd);
+m_RenderDevice->Present();
+```
+
+After `Compile()`, any pass not contributing to the `backbuffer` (e.g. a disconnected debug pass) is culled. Transient `hdr` and `depth` are allocated for the Forward→Tonemap window and released once the Tonemap pass completes.
