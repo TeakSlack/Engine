@@ -6,7 +6,7 @@
 #include <Graphics/RenderDevice.h>
 #include <Render/IGpuDevice.h>
 #include <Render/ICommandContext.h>
-#include <Render/RenderGraph/FrameGraph.h>
+#include <Render/FrameGraph/FrameGraph.h>
 #include <memory>
 #include <vector>
 #include <filesystem>

@@ -61,6 +61,30 @@ public:
     virtual void          DestroyBindingSet(GpuBindingSet handle)    = 0;
 
     // -----------------------------------------------------------------------
+    // Bindless layout
+    // -----------------------------------------------------------------------
+
+	virtual GpuBindlessLayout CreateBindlessLayout(const BindlessLayoutDesc& desc) = 0;
+	virtual void 			  DestroyBindlessLayout(GpuBindlessLayout handle) = 0;
+
+    // -----------------------------------------------------------------------
+	// Descriptor table (for bindless resources)
+    // -----------------------------------------------------------------------
+
+    virtual GpuDescriptorTable CreateDescriptorTable(GpuBindlessLayout layout) = 0;
+	virtual void               DestroyDescriptorTable(GpuDescriptorTable handle) = 0;
+
+    // -----------------------------------------------------------------------
+	// Slot resource writing (for bindless resources)
+    // -----------------------------------------------------------------------
+    virtual DescriptorIndex WriteTexture(GpuDescriptorTable table, GpuTexture texture,
+        DescriptorIndex slot = InvalidDescriptorIndex) = 0;
+    virtual DescriptorIndex WriteBuffer(GpuDescriptorTable table, GpuBuffer buffer,
+        DescriptorIndex slot = InvalidDescriptorIndex) = 0;
+    virtual DescriptorIndex WriteSampler(GpuDescriptorTable table, GpuSampler sampler,
+        DescriptorIndex slot = InvalidDescriptorIndex) = 0;
+
+    // -----------------------------------------------------------------------
     // Framebuffer
     // -----------------------------------------------------------------------
     virtual GpuFramebuffer CreateFramebuffer(const FramebufferDesc& desc) = 0;

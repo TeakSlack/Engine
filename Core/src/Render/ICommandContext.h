@@ -68,6 +68,16 @@ public:
     virtual void SetBindingSet(GpuBindingSet set, uint32_t slot = 0) = 0;
 
     // -----------------------------------------------------------------------
+	// Bindless state (descriptor tables)
+    // -----------------------------------------------------------------------
+    virtual void SetBindlessTable(GpuDescriptorTable table, uint32_t rootSlot) = 0;
+
+    // Push per-draw indices (maps to push constants on Vulkan / root constants on DX12)
+    // byteSize must be ≤ 128.
+    virtual void SetGraphicsPushConstants(const void* data, uint32_t byteSize) = 0;
+    virtual void SetComputePushConstants(const void* data, uint32_t byteSize) = 0;
+
+    // -----------------------------------------------------------------------
     // Draw
     // -----------------------------------------------------------------------
     virtual void Draw(const DrawArgs& args) = 0;

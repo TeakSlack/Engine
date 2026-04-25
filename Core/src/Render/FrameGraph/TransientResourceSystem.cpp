@@ -1,6 +1,6 @@
 #include "TransientResourceSystem.h"
 #include "Render/IGpuDevice.h"
-#include "Render/RenderGraph/RenderResource.h"
+#include "Render/FrameGraph/RenderResource.h"
 
 void TransientResourceSystem::Acquire(IGpuDevice* device, RGResourceNode* resource)
 {

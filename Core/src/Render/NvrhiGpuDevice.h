@@ -14,6 +14,22 @@
 class NvrhiCommandContext;
 
 // ---------------------------------------------------------------------------
+// Internal pool entry types
+// ---------------------------------------------------------------------------
+struct BindlessLayoutEntry
+{
+    nvrhi::BindingLayoutHandle handle;
+    uint32_t                   maxCapacity = 0;
+};
+
+struct DescriptorTableEntry
+{
+    nvrhi::DescriptorTableHandle handle;
+    uint32_t                     nextFreeSlot = 0;
+    uint32_t                     capacity     = 0;
+};
+
+// ---------------------------------------------------------------------------
 // Minimal generic pool: index 0 == null/invalid
 // ---------------------------------------------------------------------------
 template<typename T>
@@ -67,6 +83,22 @@ public:
                                     GpuBindingLayout layout) override;
     void          DestroyBindingSet(GpuBindingSet handle)    override;
 
+    // -----------------------------------------------------------------------
+    // Bindless layout + descriptor table
+    // -----------------------------------------------------------------------
+    GpuBindlessLayout  CreateBindlessLayout(const BindlessLayoutDesc& desc) override;
+    void               DestroyBindlessLayout(GpuBindlessLayout handle)      override;
+
+    GpuDescriptorTable CreateDescriptorTable(GpuBindlessLayout layout)      override;
+    void               DestroyDescriptorTable(GpuDescriptorTable handle)    override;
+
+    DescriptorIndex    WriteTexture(GpuDescriptorTable table, GpuTexture texture,
+                           DescriptorIndex slot = InvalidDescriptorIndex) override;
+    DescriptorIndex    WriteBuffer(GpuDescriptorTable table, GpuBuffer buffer,
+                           DescriptorIndex slot = InvalidDescriptorIndex) override;
+    DescriptorIndex    WriteSampler(GpuDescriptorTable table, GpuSampler sampler,
+                           DescriptorIndex slot = InvalidDescriptorIndex) override;
+
     GpuFramebuffer CreateFramebuffer(const FramebufferDesc& desc) override;
     void           DestroyFramebuffer(GpuFramebuffer handle)      override;
     std::pair<uint32_t, uint32_t> GetFramebufferSize(
@@ -104,6 +136,7 @@ public:
     nvrhi::GraphicsPipelineHandle GetGraphicsPipeline(uint32_t id) { return m_GraphicsPipelines.Get(id); }
     nvrhi::ComputePipelineHandle GetComputePipeline (uint32_t id) { return m_ComputePipelines.Get(id); }
     const FramebufferDesc&       GetFramebufferDesc (uint32_t id) const { return m_FramebufferDescs.Get(id); }
+    nvrhi::IDescriptorTable*     GetDescriptorTableNative(uint32_t id) { return m_DescriptorTables.Get(id).handle.Get(); }
 
 private:
     nvrhi::IDevice* m_Device = nullptr; // non-owning
@@ -115,6 +148,8 @@ private:
     ResourcePool<nvrhi::InputLayoutHandle>      m_InputLayouts;
     ResourcePool<nvrhi::BindingLayoutHandle>    m_BindingLayouts;
     ResourcePool<nvrhi::BindingSetHandle>       m_BindingSets;
+    ResourcePool<BindlessLayoutEntry>           m_BindlessLayouts;
+    ResourcePool<DescriptorTableEntry>          m_DescriptorTables;
     ResourcePool<nvrhi::FramebufferHandle>      m_Framebuffers;
     ResourcePool<nvrhi::GraphicsPipelineHandle> m_GraphicsPipelines;
     ResourcePool<nvrhi::ComputePipelineHandle>  m_ComputePipelines;

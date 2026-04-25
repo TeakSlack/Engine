@@ -335,6 +335,40 @@ public:
         m_GfxStateDirty = true;
     }
 
+    // IDescriptorTable derives from IBindingSet in NVRHI, so we can place it
+    // directly in the bindings array at the chosen root slot.
+    void SetBindlessTable(GpuDescriptorTable table, uint32_t rootSlot) override
+    {
+        while (m_GfxState.bindings.size() <= rootSlot)
+            m_GfxState.bindings.push_back(nullptr);
+        m_GfxState.bindings[rootSlot] =
+            static_cast<nvrhi::IBindingSet*>(m_Device->GetDescriptorTableNative(table.id));
+        m_GfxStateDirty = true;
+    }
+
+    // Push constants are implemented via a volatile constant buffer bound at slot 0.
+    // Convention: pipelines that use push constants must include the push constant
+    // binding layout as index 0 in their GraphicsPipelineDesc::bindingLayouts array.
+    void SetGraphicsPushConstants(const void* data, uint32_t byteSize) override
+    {
+        EnsurePushConstantResources();
+        m_CmdList->writeBuffer(m_PushConstantBuffer, data, byteSize);
+        if (m_GfxState.bindings.empty())
+            m_GfxState.bindings.push_back(nullptr);
+        m_GfxState.bindings[0] = m_PushConstantBindingSet;
+        m_GfxStateDirty = true;
+    }
+
+    void SetComputePushConstants(const void* data, uint32_t byteSize) override
+    {
+        EnsurePushConstantResources();
+        m_CmdList->writeBuffer(m_PushConstantBuffer, data, byteSize);
+        if (m_CmpState.bindings.empty())
+            m_CmpState.bindings.push_back(nullptr);
+        m_CmpState.bindings[0] = m_PushConstantBindingSet;
+        m_CmpStateDirty = true;
+    }
+
     // ---- Draw ----
     void Draw(const DrawArgs& args) override
     {
@@ -361,14 +395,20 @@ public:
 
     void DrawIndirect(GpuBuffer argsBuffer, uint64_t byteOffset) override
     {
+        m_GfxState.indirectParams = m_Device->GetBuffer(argsBuffer.id);
+        m_GfxStateDirty = true;
         FlushGraphicsState();
-        m_CmdList->drawIndirect(byteOffset, 1); // TODO: fix this
+        m_CmdList->drawIndirect(static_cast<uint32_t>(byteOffset));
+        m_GfxState.indirectParams = nullptr;
     }
 
     void DrawIndexedIndirect(GpuBuffer argsBuffer, uint64_t byteOffset) override
     {
+        m_GfxState.indirectParams = m_Device->GetBuffer(argsBuffer.id);
+        m_GfxStateDirty = true;
         FlushGraphicsState();
-        m_CmdList->drawIndexedIndirect(byteOffset, 1); // TODO: fix this
+        m_CmdList->drawIndexedIndirect(static_cast<uint32_t>(byteOffset));
+        m_GfxState.indirectParams = nullptr;
     }
 
     // ---- Compute ----
@@ -460,6 +500,32 @@ private:
         m_CmpStateDirty = false;
     }
 
+    // Creates a 256-byte volatile CBV + binding layout + binding set on first use.
+    // The binding layout has a single CBV at register b0 (binding offset 0).
+    void EnsurePushConstantResources()
+    {
+        if (m_PushConstantBuffer) return;
+
+        nvrhi::BufferDesc bd;
+        bd.byteSize         = 256;
+        bd.isConstantBuffer = true;
+        bd.isVolatile       = true;
+        bd.maxVersions      = 256;
+        bd.debugName        = "PushConstants";
+        m_PushConstantBuffer = m_Device->GetDevice()->createBuffer(bd);
+
+        nvrhi::BindingLayoutDesc bld;
+        bld.visibility = nvrhi::ShaderType::All;
+        bld.bindingOffsets.setConstantBufferOffset(0);
+        bld.bindings = { nvrhi::BindingLayoutItem::ConstantBuffer(0) };
+        m_PushConstantLayout = m_Device->GetDevice()->createBindingLayout(bld);
+
+        nvrhi::BindingSetDesc bsd;
+        bsd.bindings = { nvrhi::BindingSetItem::ConstantBuffer(0, m_PushConstantBuffer) };
+        m_PushConstantBindingSet =
+            m_Device->GetDevice()->createBindingSet(bsd, m_PushConstantLayout);
+    }
+
     void ApplyPendingClears()
     {
         const auto& fbDesc = m_Device->GetFramebufferDesc(m_PendingFbHandle.id);
@@ -501,6 +567,11 @@ private:
     bool           m_HasPendingClears = false;
     GpuFramebuffer m_PendingFbHandle;
     RenderPassDesc m_PendingRpDesc;
+
+    // Push constant resources (lazy-initialized on first SetGraphicsPushConstants call)
+    nvrhi::BufferHandle        m_PushConstantBuffer;
+    nvrhi::BindingLayoutHandle m_PushConstantLayout;
+    nvrhi::BindingSetHandle    m_PushConstantBindingSet;
 };
 
 // ============================================================================
@@ -599,17 +670,14 @@ GpuSampler NvrhiGpuDevice::CreateSampler(const SamplerDesc& desc)
     sd.addressU    = ToNvrhiAddressMode(desc.addressU);
     sd.addressV    = ToNvrhiAddressMode(desc.addressV);
     sd.addressW    = ToNvrhiAddressMode(desc.addressW);
-    sd.mipBias     = desc.mipLODBias;
+    sd.mipBias       = desc.mipLODBias;
     sd.maxAnisotropy = (float)desc.maxAnisotropy;
-    //sd.comparisonFunc = ToNvrhiCompFunc(desc.comparison); // TODO: fix this
-    //sd.minLod      = desc.minLOD; // TODO: fix this
-    //sd.maxLod      = desc.maxLOD; // TODO: fix this
+    // Note: NVRHI SamplerDesc has no comparisonFunc or LOD clamp fields.
+    // Those fields on our SamplerDesc are silently ignored in this backend.
 
     bool linear = (desc.minFilter == Filter::Linear || desc.magFilter == Filter::Linear);
     bool aniso  = (desc.minFilter == Filter::Anisotropic);
     sd.minFilter = sd.magFilter = sd.mipFilter = linear || aniso;
-    sd.reductionType = aniso ? nvrhi::SamplerReductionType::Standard
-                              : nvrhi::SamplerReductionType::Standard;
 
     return { m_Samplers.Add(m_Device->createSampler(sd)) };
 }
@@ -764,6 +832,99 @@ GpuBindingSet NvrhiGpuDevice::CreateBindingSet(const BindingSetDesc& desc,
 void NvrhiGpuDevice::DestroyBindingSet(GpuBindingSet handle)
 {
     m_BindingSets.Release(handle.id);
+}
+
+// ---- Bindless layout ----
+
+GpuBindlessLayout NvrhiGpuDevice::CreateBindlessLayout(const BindlessLayoutDesc& desc)
+{
+    nvrhi::BindlessLayoutDesc bld;
+    bld.visibility   = nvrhi::ShaderType::All;
+    bld.firstSlot    = 0;
+    bld.maxCapacity  = desc.maxResources;
+
+    // registerSpaces entries map HLSL register spaces to this descriptor table.
+    // Convention: textures→space1, buffers→space2, samplers→space3.
+    switch (desc.resourceType)
+    {
+    case BindlessResourceType::Texture:
+        bld.registerSpaces = { nvrhi::BindingLayoutItem::Texture_SRV(1) };
+        break;
+    case BindlessResourceType::Buffer:
+        bld.registerSpaces = { nvrhi::BindingLayoutItem::StructuredBuffer_SRV(2) };
+        break;
+    case BindlessResourceType::Sampler:
+        bld.registerSpaces = { nvrhi::BindingLayoutItem::Sampler(3) };
+        break;
+    }
+
+    BindlessLayoutEntry entry;
+    entry.maxCapacity = desc.maxResources;
+    entry.handle      = m_Device->createBindlessLayout(bld);
+    return { m_BindlessLayouts.Add(std::move(entry)) };
+}
+
+void NvrhiGpuDevice::DestroyBindlessLayout(GpuBindlessLayout handle)
+{
+    m_BindlessLayouts.Release(handle.id);
+}
+
+// ---- Descriptor table ----
+
+GpuDescriptorTable NvrhiGpuDevice::CreateDescriptorTable(GpuBindlessLayout layout)
+{
+    auto& layoutEntry = m_BindlessLayouts.Get(layout.id);
+    DescriptorTableEntry entry;
+    entry.capacity     = layoutEntry.maxCapacity;
+    entry.nextFreeSlot = 0;
+    entry.handle       = m_Device->createDescriptorTable(layoutEntry.handle);
+    return { m_DescriptorTables.Add(std::move(entry)) };
+}
+
+void NvrhiGpuDevice::DestroyDescriptorTable(GpuDescriptorTable handle)
+{
+    m_DescriptorTables.Release(handle.id);
+}
+
+// ---- Descriptor writes ----
+
+DescriptorIndex NvrhiGpuDevice::WriteTexture(GpuDescriptorTable table,
+                                               GpuTexture texture,
+                                               DescriptorIndex slot)
+{
+    auto& entry = m_DescriptorTables.Get(table.id);
+    if (slot == InvalidDescriptorIndex)
+        slot = entry.nextFreeSlot++;
+    m_Device->writeDescriptorTable(
+        entry.handle,
+        nvrhi::BindingSetItem::Texture_SRV(slot, m_Textures.Get(texture.id)));
+    return slot;
+}
+
+DescriptorIndex NvrhiGpuDevice::WriteBuffer(GpuDescriptorTable table,
+                                              GpuBuffer buffer,
+                                              DescriptorIndex slot)
+{
+    auto& entry = m_DescriptorTables.Get(table.id);
+    if (slot == InvalidDescriptorIndex)
+        slot = entry.nextFreeSlot++;
+    m_Device->writeDescriptorTable(
+        entry.handle,
+        nvrhi::BindingSetItem::StructuredBuffer_SRV(slot, m_Buffers.Get(buffer.id)));
+    return slot;
+}
+
+DescriptorIndex NvrhiGpuDevice::WriteSampler(GpuDescriptorTable table,
+                                               GpuSampler sampler,
+                                               DescriptorIndex slot)
+{
+    auto& entry = m_DescriptorTables.Get(table.id);
+    if (slot == InvalidDescriptorIndex)
+        slot = entry.nextFreeSlot++;
+    m_Device->writeDescriptorTable(
+        entry.handle,
+        nvrhi::BindingSetItem::Sampler(slot, m_Samplers.Get(sampler.id)));
+    return slot;
 }
 
 // ---- Framebuffer ----

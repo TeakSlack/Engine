@@ -50,4 +50,26 @@ struct MaterialComponent
 	AssetHandle<MaterialAsset> Material;
 };
 
+// -------------------------------------------------------------------------
+// LightComponent
+// -------------------------------------------------------------------------
+
+enum class LightType : uint8_t
+{
+	Point,
+	Directional,
+	Spot
+};
+
+struct LightComponent
+{
+	LightType Type = LightType::Point;
+	Vector3 Color = Vector3(1.0f);
+	float Intensity = 1.0f;
+	float Range = 10.0f; // For point and spot lights
+	float InnerConeAngle = 15.0f; // For spot lights
+	float OuterConeAngle = 30.0f; // For spot lights
+	bool CastsShadows = false;
+};
+
 #endif // COMPONENTS_H

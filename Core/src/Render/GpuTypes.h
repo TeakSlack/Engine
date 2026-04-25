@@ -33,6 +33,8 @@ struct GpuBindingSetTag      {};
 struct GpuGraphicsPipelineTag{};
 struct GpuComputePipelineTag {};
 struct GpuFramebufferTag     {};
+struct GpuBindlessLayoutTag  {};
+struct GpuDescriptorTableTag {};
 
 using GpuBuffer           = GpuHandle<GpuBufferTag>;
 using GpuTexture          = GpuHandle<GpuTextureTag>;
@@ -44,6 +46,8 @@ using GpuBindingSet       = GpuHandle<GpuBindingSetTag>;
 using GpuGraphicsPipeline = GpuHandle<GpuGraphicsPipelineTag>;
 using GpuComputePipeline  = GpuHandle<GpuComputePipelineTag>;
 using GpuFramebuffer      = GpuHandle<GpuFramebufferTag>;
+using GpuBindlessLayout   = GpuHandle<GpuBindlessLayoutTag>;
+using GpuDescriptorTable  = GpuHandle<GpuDescriptorTableTag>;
 
 // ---------------------------------------------------------------------------
 // Format
@@ -158,14 +162,14 @@ enum class AddressMode { Wrap, Mirror, Clamp, Border };
 // ---------------------------------------------------------------------------
 struct Viewport
 {
-    float x = 0.f, y = 0.f;
-    float width = 0.f, height = 0.f;
-    float minDepth = 0.f, maxDepth = 1.f;
+    float X = 0.f, Y = 0.f;
+    float Width = 0.f, Height = 0.f;
+    float MinDepth = 0.f, MaxDepth = 1.f;
 };
 
 struct ScissorRect
 {
-    int x = 0, y = 0, width = 0, height = 0;
+    int X = 0, Y = 0, Width = 0, Height = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -173,7 +177,7 @@ struct ScissorRect
 // ---------------------------------------------------------------------------
 struct ClearValue
 {
-    float r = 0.f, g = 0.f, b = 0.f, a = 1.f;
+    float R = 0.f, G = 0.f, B = 0.f, A = 1.f;
 };
 
 // ---------------------------------------------------------------------------
@@ -181,10 +185,10 @@ struct ClearValue
 // ---------------------------------------------------------------------------
 struct BufferDesc
 {
-    uint64_t    byteSize   = 0;
-    BufferUsage usage      = BufferUsage::None;
-    bool        cpuVisible = false;
-    const char* debugName  = nullptr;
+    uint64_t    ByteSize   = 0;
+    BufferUsage Usage      = BufferUsage::None;
+    bool        CpuVisible = false;
+    const char* DebugName  = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -194,20 +198,20 @@ enum class TextureDimension { Texture1D, Texture2D, Texture3D, Texture2DArray, T
 
 struct TextureDesc
 {
-    uint32_t         width              = 1;
-    uint32_t         height             = 1;
-    uint32_t         depth              = 1;
-    uint32_t         mipLevels          = 1;
-    uint32_t         sampleCount        = 1;
-    GpuFormat        format             = GpuFormat::RGBA8_UNORM;
-    TextureDimension dimension          = TextureDimension::Texture2D;
-    TextureUsage     usage              = TextureUsage::ShaderResource;
-    const char*      debugName          = nullptr;
+    uint32_t         Width              = 1;
+    uint32_t         Height             = 1;
+    uint32_t         Depth              = 1;
+    uint32_t         MipLevels          = 1;
+    uint32_t         SampleCount        = 1;
+    GpuFormat        Format             = GpuFormat::RGBA8_UNORM;
+    TextureDimension Dimension          = TextureDimension::Texture2D;
+    TextureUsage     Usage              = TextureUsage::ShaderResource;
+    const char*      DebugName          = nullptr;
     // Optimized clear value — must match what you pass to BeginRenderPass.
     // D3D12 warns if these differ. Set for any RenderTarget or DepthStencil texture.
-    ClearValue       optimizedClearColor   = {};        // used when usage = RenderTarget
-    float            optimizedClearDepth   = 1.0f;      // used when usage = DepthStencil
-    uint8_t          optimizedClearStencil = 0;
+    ClearValue       OptimizedClearColor   = {};        // used when usage = RenderTarget
+    float            OptimizedClearDepth   = 1.0f;      // used when usage = DepthStencil
+    uint8_t          OptimizedClearStencil = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -215,18 +219,18 @@ struct TextureDesc
 // ---------------------------------------------------------------------------
 struct SamplerDesc
 {
-    Filter         minFilter     = Filter::Linear;
-    Filter         magFilter     = Filter::Linear;
-    Filter         mipFilter     = Filter::Linear;
-    AddressMode    addressU      = AddressMode::Wrap;
-    AddressMode    addressV      = AddressMode::Wrap;
-    AddressMode    addressW      = AddressMode::Wrap;
-    float          mipLODBias    = 0.f;
-    uint32_t       maxAnisotropy = 1;
-    ComparisonFunc comparison    = ComparisonFunc::Always;
-    float          borderColor[4]= { 0.f, 0.f, 0.f, 0.f };
-    float          minLOD        = 0.f;
-    float          maxLOD        = 1000.f;
+    Filter         MinFilter     = Filter::Linear;
+    Filter         MagFilter     = Filter::Linear;
+    Filter         MipFilter     = Filter::Linear;
+    AddressMode    AddressU      = AddressMode::Wrap;
+    AddressMode    AddressV      = AddressMode::Wrap;
+    AddressMode    AddressW      = AddressMode::Wrap;
+    float          MipLODBias    = 0.f;
+    uint32_t       MaxAnisotropy = 1;
+    ComparisonFunc Comparison    = ComparisonFunc::Always;
+    float          BorderColor[4]= { 0.f, 0.f, 0.f, 0.f };
+    float          MinLOD        = 0.f;
+    float          MaxLOD        = 1000.f;
 };
 
 // ---------------------------------------------------------------------------
@@ -234,11 +238,11 @@ struct SamplerDesc
 // ---------------------------------------------------------------------------
 struct ShaderDesc
 {
-    ShaderStage  stage      = ShaderStage::None;
-    const void*  bytecode   = nullptr;
-    size_t       byteSize   = 0;
-    const char*  entryPoint = "main";
-    const char*  debugName  = nullptr;
+    ShaderStage  Stage      = ShaderStage::None;
+    const void*  Bytecode   = nullptr;
+    size_t       ByteSize   = 0;
+    const char*  EntryPoint = "main";
+    const char*  DebugName  = nullptr;
 };
 
 // ---------------------------------------------------------------------------
@@ -246,11 +250,11 @@ struct ShaderDesc
 // ---------------------------------------------------------------------------
 struct VertexAttributeDesc
 {
-    const char* name        = nullptr;
-    GpuFormat   format      = GpuFormat::Unknown;
-    uint32_t    bufferIndex = 0;
-    uint32_t    offset      = 0;
-    uint32_t    stride      = 0;
+    const char* Name        = nullptr;
+    GpuFormat   Format      = GpuFormat::Unknown;
+    uint32_t    BufferIndex = 0;
+    uint32_t    Offset      = 0;
+    uint32_t    Stride      = 0;
 };
 
 // ---------------------------------------------------------------------------
@@ -267,9 +271,9 @@ enum class BindingType
 
 struct BindingLayoutItem
 {
-    BindingType type  = BindingType::ConstantBuffer;
-    ShaderStage stage = ShaderStage::AllGraphics;
-    uint32_t    slot  = 0;
+    BindingType Type  = BindingType::ConstantBuffer;
+    ShaderStage Stage = ShaderStage::AllGraphics;
+    uint32_t    Slot  = 0;
 
     static BindingLayoutItem ConstantBuffer(uint32_t slot, ShaderStage stage = ShaderStage::AllGraphics)
         { return { BindingType::ConstantBuffer, stage, slot }; }
@@ -285,7 +289,7 @@ struct BindingLayoutItem
 
 struct BindingLayoutDesc
 {
-    std::vector<BindingLayoutItem> items;
+    std::vector<BindingLayoutItem> Items;
 };
 
 // ---------------------------------------------------------------------------
@@ -293,27 +297,26 @@ struct BindingLayoutDesc
 // ---------------------------------------------------------------------------
 struct BindingItem
 {
-    BindingType type    = BindingType::ConstantBuffer;
-    uint32_t    slot    = 0;
-    GpuBuffer   buffer;
-    GpuTexture  texture;
-    GpuSampler  sampler;
-
+    BindingType Type    = BindingType::ConstantBuffer;
+    uint32_t    Slot    = 0;
+    GpuBuffer   Buffer;
+    GpuTexture  Texture;
+    GpuSampler  Sampler;
     static BindingItem ConstantBuffer(uint32_t slot, GpuBuffer buf)
-        { BindingItem i; i.type = BindingType::ConstantBuffer; i.slot = slot; i.buffer = buf; return i; }
+        { BindingItem i; i.Type = BindingType::ConstantBuffer; i.Slot = slot; i.Buffer = buf; return i; }
     static BindingItem Texture(uint32_t slot, GpuTexture tex)
-        { BindingItem i; i.type = BindingType::Texture; i.slot = slot; i.texture = tex; return i; }
+        { BindingItem i; i.Type = BindingType::Texture; i.Slot = slot; i.Texture = tex; return i; }
     static BindingItem Sampler(uint32_t slot, GpuSampler smp)
-        { BindingItem i; i.type = BindingType::Sampler; i.slot = slot; i.sampler = smp; return i; }
+        { BindingItem i; i.Type = BindingType::Sampler; i.Slot = slot; i.Sampler = smp; return i; }
     static BindingItem StorageBuffer(uint32_t slot, GpuBuffer buf)
-        { BindingItem i; i.type = BindingType::StorageBuffer; i.slot = slot; i.buffer = buf; return i; }
+        { BindingItem i; i.Type = BindingType::StorageBuffer; i.Slot = slot; i.Buffer = buf; return i; }
     static BindingItem StorageTexture(uint32_t slot, GpuTexture tex)
-        { BindingItem i; i.type = BindingType::StorageTexture; i.slot = slot; i.texture = tex; return i; }
+        { BindingItem i; i.Type = BindingType::StorageTexture; i.Slot = slot; i.Texture = tex; return i; }
 };
 
 struct BindingSetDesc
 {
-    std::vector<BindingItem> items;
+    std::vector<BindingItem> Items;
 };
 
 // ---------------------------------------------------------------------------
@@ -321,15 +324,15 @@ struct BindingSetDesc
 // ---------------------------------------------------------------------------
 struct FramebufferAttachment
 {
-    GpuTexture texture;
-    uint32_t   mipLevel   = 0;
-    uint32_t   arraySlice = 0;
+    GpuTexture Texture;
+    uint32_t   MipLevel   = 0;
+    uint32_t   ArraySlice = 0;
 };
 
 struct FramebufferDesc
 {
-    std::vector<FramebufferAttachment> colorAttachments;
-    FramebufferAttachment              depthAttachment;
+    std::vector<FramebufferAttachment> ColorAttachments;
+    FramebufferAttachment              DepthAttachment;
 };
 
 // ---------------------------------------------------------------------------
@@ -337,12 +340,12 @@ struct FramebufferDesc
 // ---------------------------------------------------------------------------
 struct RasterizerDesc
 {
-    FillMode fillMode             = FillMode::Solid;
-    CullMode cullMode             = CullMode::Back;
-    bool     frontCCW             = true;
-    int32_t  depthBias            = 0;
-    float    slopeScaledDepthBias = 0.f;
-    bool     depthClipEnable      = true;
+    FillMode FillMode             = FillMode::Solid;
+    CullMode CullMode             = CullMode::Back;
+    bool     FrontCCW             = true;
+    int32_t  DepthBias            = 0;
+    float    SlopeScaledDepthBias = 0.f;
+    bool     DepthClipEnable      = true;
 };
 
 // ---------------------------------------------------------------------------
@@ -350,22 +353,22 @@ struct RasterizerDesc
 // ---------------------------------------------------------------------------
 struct StencilOpDesc
 {
-    StencilOp      failOp      = StencilOp::Keep;
-    StencilOp      depthFailOp = StencilOp::Keep;
-    StencilOp      passOp      = StencilOp::Keep;
-    ComparisonFunc func        = ComparisonFunc::Always;
+    StencilOp      FailOp      = StencilOp::Keep;
+    StencilOp      DepthFailOp = StencilOp::Keep;
+    StencilOp      PassOp      = StencilOp::Keep;
+    ComparisonFunc Func        = ComparisonFunc::Always;
 };
 
 struct DepthStencilDesc
 {
-    bool           depthTestEnable  = true;
-    bool           depthWriteEnable = true;
-    ComparisonFunc depthFunc        = ComparisonFunc::Less;
-    bool           stencilEnable    = false;
-    uint8_t        stencilReadMask  = 0xFF;
-    uint8_t        stencilWriteMask = 0xFF;
-    StencilOpDesc  frontFace;
-    StencilOpDesc  backFace;
+    bool           DepthTestEnable  = true;
+    bool           DepthWriteEnable = true;
+    ComparisonFunc DepthFunc        = ComparisonFunc::Less;
+    bool           StencilEnable    = false;
+    uint8_t        StencilReadMask  = 0xFF;
+    uint8_t        StencilWriteMask = 0xFF;
+    StencilOpDesc  FrontFace;
+    StencilOpDesc  BackFace;
 };
 
 // ---------------------------------------------------------------------------
@@ -373,14 +376,14 @@ struct DepthStencilDesc
 // ---------------------------------------------------------------------------
 struct RenderTargetBlendDesc
 {
-    bool        blendEnable   = false;
-    BlendFactor srcBlend      = BlendFactor::SrcAlpha;
-    BlendFactor dstBlend      = BlendFactor::InvSrcAlpha;
-    BlendOp     blendOp       = BlendOp::Add;
-    BlendFactor srcBlendAlpha = BlendFactor::One;
-    BlendFactor dstBlendAlpha = BlendFactor::Zero;
-    BlendOp     blendOpAlpha  = BlendOp::Add;
-    uint8_t     writeMask     = 0xF;
+    bool        BlendEnable   = false;
+    BlendFactor SrcBlend      = BlendFactor::SrcAlpha;
+    BlendFactor DstBlend      = BlendFactor::InvSrcAlpha;
+    BlendOp     BlendOperator = BlendOp::Add;
+    BlendFactor SrcBlendAlpha = BlendFactor::One;
+    BlendFactor DstBlendAlpha = BlendFactor::Zero;
+    BlendOp     BlendOpAlpha  = BlendOp::Add;
+    uint8_t     WriteMask     = 0xF;
 };
 
 struct BlendDesc
@@ -393,17 +396,17 @@ struct BlendDesc
 // ---------------------------------------------------------------------------
 struct GraphicsPipelineDesc
 {
-    GpuShader      vs;
-    GpuShader      hs;
-    GpuShader      ds;
-    GpuShader      gs;
-    GpuShader      ps;
-    GpuInputLayout inputLayout;
-    PrimitiveType  primType = PrimitiveType::TriangleList;
-    RasterizerDesc    rasterizer;
-    DepthStencilDesc  depthStencil;
-    BlendDesc         blend;
-    std::vector<GpuBindingLayout> bindingLayouts;
+    GpuShader      VS;
+    GpuShader      HS;
+    GpuShader      DS;
+    GpuShader      GS;
+    GpuShader      PS;
+    GpuInputLayout InputLayout;
+    PrimitiveType  PrimType = PrimitiveType::TriangleList;
+    RasterizerDesc    Rasterizer;
+    DepthStencilDesc  DepthStencil;
+    BlendDesc         Blend;
+    std::vector<GpuBindingLayout> BindingLayouts;
 };
 
 // ---------------------------------------------------------------------------
@@ -411,8 +414,8 @@ struct GraphicsPipelineDesc
 // ---------------------------------------------------------------------------
 struct ComputePipelineDesc
 {
-    GpuShader cs;
-    std::vector<GpuBindingLayout> bindingLayouts;
+    GpuShader CS;
+    std::vector<GpuBindingLayout> BindingLayouts;
 };
 
 // ---------------------------------------------------------------------------
@@ -420,26 +423,26 @@ struct ComputePipelineDesc
 // ---------------------------------------------------------------------------
 struct DrawArgs
 {
-    uint32_t vertexCount   = 0;
-    uint32_t instanceCount = 1;
-    uint32_t startVertex   = 0;
-    uint32_t startInstance = 0;
+    uint32_t VertexCount   = 0;
+    uint32_t InstanceCount = 1;
+    uint32_t StartVertex   = 0;
+    uint32_t StartInstance = 0;
 };
 
 struct DrawIndexedArgs
 {
-    uint32_t indexCount    = 0;
-    uint32_t instanceCount = 1;
-    uint32_t startIndex    = 0;
-    int32_t  baseVertex    = 0;
-    uint32_t startInstance = 0;
+    uint32_t IndexCount    = 0;
+    uint32_t InstanceCount = 1;
+    uint32_t StartIndex    = 0;
+    int32_t  BaseVertex    = 0;
+    uint32_t StartInstance = 0;
 };
 
 struct DispatchArgs
 {
-    uint32_t groupX = 1;
-    uint32_t groupY = 1;
-    uint32_t groupZ = 1;
+    uint32_t GroupX = 1;
+    uint32_t GroupY = 1;
+    uint32_t GroupZ = 1;
 };
 
 // ---------------------------------------------------------------------------
@@ -447,13 +450,43 @@ struct DispatchArgs
 // ---------------------------------------------------------------------------
 struct RenderPassDesc
 {
-    GpuFramebuffer framebuffer;
-    bool           clearColor   = false;
-    ClearValue     colorValue   = {};
-    bool           clearDepth   = false;
-    float          depthValue   = 1.0f;
-    bool           clearStencil = false;
-    uint8_t        stencilValue = 0;
+    GpuFramebuffer Framebuffer;
+    bool           ClearColor   = false;
+    ClearValue     ColorValue   = {};
+    bool           ClearDepth   = false;
+    float          DepthValue   = 1.0f;
+    bool           ClearStencil = false;
+    uint8_t        StencilValue = 0;
 };
+
+// ---------------------------------------------------------------------------
+// Bindless resource layout descriptor
+// ---------------------------------------------------------------------------
+
+enum class BindlessResourceType : uint8_t
+{
+    Texture,
+    Sampler,
+    Buffer,
+};
+
+inline BindlessResourceType operator|(BindlessResourceType a, BindlessResourceType b)
+{
+    return (BindlessResourceType)((uint8_t)a | (uint8_t)b);
+}
+
+inline uint8_t operator&(BindlessResourceType a, BindlessResourceType b)
+{
+    return (uint8_t)a & (uint8_t)b;
+}
+
+struct BindlessLayoutDesc
+{
+	BindlessResourceType ResourceType = BindlessResourceType::Texture;
+	uint32_t             MaxResources = 65536; // Max descriptors
+};
+
+using DescriptorIndex = uint32_t;
+static constexpr DescriptorIndex InvalidDescriptorIndex = UINT32_MAX;
 
 #endif // GPU_TYPES_H
