@@ -32,8 +32,9 @@ public:
 		std::function<void(const PassData&, const RenderPassResources&, ICommandContext*)> execute
 	);
 
-	RGTextureHandle ImportTexture(GpuTexture texture, const TextureDesc& desc, ResourceLayout layout);
-	RGBufferHandle  ImportBuffer(GpuBuffer buffer, const BufferDesc& desc);
+	RGTextureHandle		   ImportTexture(GpuTexture texture, const TextureDesc& desc, ResourceLayout layout);
+	RGMutableTextureHandle ImportMutableTexture(GpuTexture texture, const TextureDesc& desc, ResourceLayout layout);
+	RGBufferHandle		   ImportBuffer(GpuBuffer buffer, const BufferDesc& desc);
 
 	void Compile();
 	void Execute(IGpuDevice* device, ICommandContext* ctx);

@@ -45,12 +45,16 @@ namespace SceneRenderSystem
             if (!meshData)
                 return;
 
+			MaterialAsset* materialData = assetManager->GetAsset(material.Material);
+
             RenderPacket packet;
             packet.Mesh          = mesh.Mesh;
             packet.Material      = material.Material;
             packet.WorldTransform = transform.GetMatrix();
             packet.CastsShadow   = true;
             packet.Transparent   = false; // extend: read from MaterialAsset::Alpha
+			packet.IsOccluder = materialData->IsOccluder; // extend: read from MaterialAsset::Occluder
+			packet.Bin = materialData->DrawBin; // extend: read from MaterialAsset::DrawBin
 
             // Derive world-space AABB from the mesh's local bounds.
             MakeWorldBounds(

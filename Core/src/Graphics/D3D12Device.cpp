@@ -182,7 +182,7 @@ void D3D12Device::Impl::PickAdapter()
             char name[128] = {};
             WideCharToMultiByte(CP_UTF8, 0, desc.Description, -1,
                                 name, sizeof(name), nullptr, nullptr);
-            LOG_WARN_TO("D3D12Device", "Adapter selected : {} ({} MB VRAM)",
+            LOG_INFO_TO("D3D12Device", "Adapter selected : {} ({} MB VRAM)",
                       name, desc.DedicatedVideoMemory / (1024 * 1024));
             return;
         }

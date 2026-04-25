@@ -247,7 +247,20 @@ public:
 
     void EndRenderPass() override
     {
-        // No explicit end call needed for NVRHI's non-render-pass API.
+        // FlushGraphicsState is gated on having a pipeline, so clear-only passes
+        // (no draws, no SetGraphicsPipeline) would silently drop their clears.
+        // Apply them directly here — clearTextureFloat handles its own layout
+        // transition internally and does not require an active pipeline.
+        if (m_HasPendingClears)
+        {
+            ApplyPendingClears();
+            m_HasPendingClears = false;
+        }
+
+        m_GfxState.framebuffer = nullptr;
+        m_PendingFbHandle      = {};
+        m_PendingRpDesc        = {};
+        m_GfxStateDirty        = false;
     }
 
     // ---- Graphics state ----
@@ -276,6 +289,11 @@ public:
         m_GfxStateDirty = true;
     }
 
+    void SetViewport(float x, float y, float width, float height, float minDepth = 0.0f, float maxDepth = 1.0f)
+    {
+		SetViewport(Viewport{ x, y, width, height, minDepth, maxDepth });
+    }
+
     void SetScissor(const ScissorRect& rect) override
     {
         nvrhi::Rect nvSr(rect.x, rect.x + rect.width,
@@ -284,6 +302,11 @@ public:
         if (srs.empty()) srs.push_back(nvSr); else srs[0] = nvSr;
         m_ExplicitScissor = true;
         m_GfxStateDirty   = true;
+    }
+
+    void SetScissor(int x, int y, int width, int height)
+    {
+        SetScissor(ScissorRect{ x, y, width, height });
     }
 
     void SetVertexBuffer(uint32_t slot, GpuBuffer buffer, uint64_t byteOffset) override

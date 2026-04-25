@@ -138,6 +138,26 @@ RGTextureHandle FrameGraph::ImportTexture(GpuTexture texture, const TextureDesc&
 	return handle;
 }
 
+RGMutableTextureHandle FrameGraph::ImportMutableTexture(GpuTexture texture, const TextureDesc& desc, ResourceLayout layout)
+{
+	CORE_ASSERT(texture.IsValid(), "Attempting to import an invalid texture!");
+
+	uint16_t index = static_cast<uint16_t>(m_Resources.size());
+	RGResourceNode& node = m_Resources.emplace_back();
+	node.Kind = RGResourceNode::ResourceKind::Texture;
+	node.TextureDesc = desc;
+	node.Name = desc.debugName ? desc.debugName : "";
+	node.Imported = true;
+	node.RefCount = 1;
+	node.ImportedLayout = layout;
+	node.ResolvedTexture = texture;
+
+	RGMutableTextureHandle handle;
+	handle.Index = index;
+	handle.Version = 0;
+	return handle;
+}
+
 RGBufferHandle FrameGraph::ImportBuffer(GpuBuffer buffer, const BufferDesc& desc)
 {
 	CORE_ASSERT(buffer.id != 0, "Attempting to import an invalid buffer!");

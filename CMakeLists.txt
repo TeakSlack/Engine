@@ -129,5 +129,6 @@ endforeach()
 # Sub-projects
 # ---------------------------------------------------------------------------
 add_subdirectory(Core)
-add_subdirectory(App)
+add_subdirectory(Examples/01_Clear)
+add_subdirectory(Examples/02_Quad)
 add_subdirectory(EngineDLL)

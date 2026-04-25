@@ -6,6 +6,7 @@
 #include "Asset/Asset.h"
 #include "Math/Matrix4x4.h"
 #include "Math/Vector3.h"
+#include "DrawBinFlags.h"
 
 // -------------------------------------------------------------------------
 // RenderPacket — the atomic unit submitted to the renderer each frame.
@@ -28,6 +29,9 @@ struct RenderPacket
 
     // ---- Where to draw it -------------------------------------------
     Matrix4x4 WorldTransform;
+    Matrix4x4 PreviousWorldTransform; // Needed for TAA velocity buffer
+
+    // ---- Which bin to cluster it into --------------------------------
 
     // ---- World-space AABB (for frustum culling) ----------------------
     // Precomputed from MeshAsset::BoundsMin/Max * WorldTransform.
@@ -46,9 +50,11 @@ struct RenderPacket
     uint64_t SortKey = 0;
 
     // ---- Flags ------------------------------------------------------
+	DrawBinFlags Bin = DrawBinFlags::None;
     bool CastsShadow = true;
     bool Transparent = false; // moves packet to the transparent pass and
                               // inverts depth sort order
+	bool IsOccluder = false;  // extend: set from MaterialAsset or a separate OccluderComponent
 };
 
 // -------------------------------------------------------------------------
@@ -60,10 +66,13 @@ struct RenderPacket
 // Reinterpreting float bits as uint preserves sort order for positive
 // distances (IEEE 754 guarantee), so no extra conversion is needed.
 // -------------------------------------------------------------------------
-inline void ComputeSortKey(RenderPacket& packet, const Vector3& viewPos)
+inline void ComputeSortKey(RenderPacket& packet, const Vector3& viewPos, uint8_t layerIndex)
 {
-    // High 32 — material identity, truncated to 32 bits
-    uint32_t matKey = static_cast<uint32_t>(packet.Material.id.Value() & 0xFFFFFFFFu);
+	uint64_t layer = static_cast<uint64_t>(layerIndex & 0xFu) << 60; // reserve low 8 bits for layer index
+	uint64_t transBit = static_cast<uint64_t>(packet.Transparent ? 1u : 0u) << 59; // reserve 1 bit for transparency
+
+	// Extract low 32 bits of material UUID into a 64-bit value only when shifting
+	uint64_t matKey = static_cast<uint64_t>(packet.Material.id.Value() & 0xFFFFFFFFu);
 
     // Low 32 — linear distance from camera to AABB centre
     Vector3 centre = (packet.WorldBoundsMin + packet.WorldBoundsMax) * 0.5f;
@@ -78,7 +87,7 @@ inline void ComputeSortKey(RenderPacket& packet, const Vector3& viewPos)
     if (packet.Transparent)
         depthKey = ~depthKey;
 
-    packet.SortKey = (static_cast<uint64_t>(matKey) << 32) | depthKey;
+    packet.SortKey = layer | transBit | (matKey << 32) | static_cast<uint64_t>(depthKey);
 }
 
 // -------------------------------------------------------------------------

@@ -7,6 +7,7 @@
 #include "Math/Vector3.h"
 #include "Util/UUID.h"
 #include "Math/Vector4.h"
+#include "Render/DrawBinFlags.h"
 
 using AssetID = CoreUUID;
 inline const AssetID NullAssetId = CoreUUID{};
@@ -52,6 +53,8 @@ struct MaterialAsset
     enum class AlphaMode { Opaque, Mask, Blend } Alpha = AlphaMode::Opaque;
     float AlphaCutoff = 0.5f;
     bool  DoubleSided = false;
+	bool  IsOccluder = true; // whether this material should be considered an occluder for occlusion culling
+	DrawBinFlags DrawBin = DrawBinFlags::ForwardOpaque; // which render bin to submit this material's RenderPackets into
 };
 
 struct ShaderAsset
