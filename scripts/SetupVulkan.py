@@ -28,7 +28,7 @@ class SetupVulkan:
     def GetVulkanUrls(cls):
         version = cls.GetLatestVersion()
         return {
-            "Windows": f"https://sdk.lunarg.com/sdk/download/{version}/windows/VulkanSDK-{version}-Installer.exe",
+            "Windows": f"https://sdk.lunarg.com/sdk/download/{version}/windows/vulkansdk-windows-X64-{version}.exe",
             "Linux": f"https://sdk.lunarg.com/sdk/download/{version}/linux/vulkansdk-linux-x86_64-{version}.tar.xz"
         }
 
