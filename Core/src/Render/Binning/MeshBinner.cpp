@@ -72,6 +72,8 @@ void MeshBinner::Init(IGpuDevice* device, const Config& config)
 		countDesc.DebugName = "DrawCountBuffer";
 		m_Bins[b].Result.DrawCountBuffer = device->CreateBuffer(countDesc);
 	}
+
+	RebuildSceneBindingSet();
 }
 
 void MeshBinner::Build(std::span<const RenderPacket* const> packets, ICommandContext* cmd)
@@ -136,6 +138,7 @@ void MeshBinner::Build(std::span<const RenderPacket* const> packets, ICommandCon
 		cmd->WriteBuffer(m_MaterialBuffer,
 			m_MaterialStaging.data(),
 			m_MaterialStaging.size() * sizeof(GpuMaterialData));
+		RebuildSceneBindingSet(); // Recreate binding sets to bind the new buffer (could be optimized by using dynamic offsets or a bindless array)
 		m_MaterialDirty = false;
 	}
 
@@ -278,4 +281,21 @@ uint32_t MeshBinner::RegisterTexture(AssetHandle<TextureAsset> texture)
 	return slot;
 }
 
+void MeshBinner::RebuildSceneBindingSet()
+{
+	BindingLayoutDesc layoutDesc;
+	layoutDesc.Items = {
+		BindingLayoutItem::StorageBuffer(2, ShaderStage::Vertex),  // g_Instances
+		BindingLayoutItem::StorageBuffer(3, ShaderStage::Pixel),   // g_Materials
+	};
+	m_SceneBindingLayout = m_Device->CreateBindingLayout(layoutDesc);
 
+	for (auto& bin : m_Bins)
+	{
+		BindingSetDesc setDesc;
+		setDesc.Items = {
+			{ BindingType::StorageBuffer, 2, bin.Result.InstanceBuffer },
+			{ BindingType::StorageBuffer, 3, m_MaterialBuffer          },
+		};
+		bin.Result.BindingSet = m_Device->CreateBindingSet(setDesc, m_SceneBindingLayout);
+}

@@ -662,3 +662,41 @@ m_RenderDevice->Present();
 ```
 
 After `Compile()`, any pass not contributing to the `backbuffer` (e.g. a disconnected debug pass) is culled. Transient `hdr` and `depth` are allocated for the Forward→Tonemap window and released once the Tonemap pass completes.
+
+## Accessing the Binning System
+
+Imported models may be placed into a bin (`DepthPrePass`, `ForwardOpaque`, `Shadow`, or `Transparent`), which are sorted by the `MeshBinner`. The `MeshBinner` uses a bindless system for mesh rendering, outputting a mega vertex and index buffer which may be drawn using `cmd->DrawIndexedIndirectCount()`.
+
+```cpp
+// In OnUpdate
+m_Binner.Build(renderer->GetVisiblePackets, m_Cmd.get());
+
+// Import binner outputs so FrameGraph tracks their layout
+auto& bin = m_Binner.GetBin(DrawBinFlags::ForwardOpaque);
+auto drawArgs = m_FG->ImportBuffer(bin.DrawArgsBuffer);
+auto drawCount = m_FG->ImportBuffer(bin.DrawCountBuffer);
+
+// Forward pass
+struct ForwardPassData { RGBufferHandle drawArgs, drawCount; 
+                         RGMutableTextureHandle rt, depth; };
+auto& forwardPass = m_FG->AddCallbackPass<ForwardPassData>("Forward",
+    [&](PassBuilder& builder, ForwardPassData& data)
+    {
+        data.rt   = builder.WriteTexture(builder.CreateTexture(rtDesc));
+        data.depth = builder.WriteDepth(builder.CreateTexture(depthDesc));
+        data.drawArgs = builder.ReadBuffer(drawArgs);
+        data.drawCount = builder.ReadBuffer(drawCount);
+    },
+    [this](const ForwardPassData& data, const RenderPassResources& res, ICommandContext* cmd)
+    {
+        cmd->SetGraphicsPipeline(m_ForwardPipeline);
+        cmd->SetVertexBuffer(0, m_Binner.MegaVertexBuffer());
+        cmd->SetIndexBuffer(m_Binner.MegaIndexBuffer(), GpuFormat::R32_UINT);
+        cmd->SetBindingSet(bin.BindingSet, 0);     // InstanceBuffer + MaterialBuffer
+        cmd->SetBindlessTable(m_Binner.TextureTable(), 1);     // all textures
+        cmd->DrawIndexedIndirectCount(
+            res.GetBuffer(d.drawArgs),   0,
+            res.GetBuffer(d.drawCount),  0,
+            m_Binner.GetBin(DrawBinFlags::ForwardOpaque).CpuDrawCount);
+    });
+```

@@ -25,15 +25,19 @@ public:
 	// Per-bin result — valid until the next Build() call.
 	struct BinResult
 	{
-		GpuBuffer DrawArgsBuffer;  // DrawIndexedArgs[], GPU-readable
-		GpuBuffer InstanceBuffer;  // PerInstanceData[], GPU-readable
-		GpuBuffer DrawCountBuffer; // uint32_t — GPU culling writes here
-		uint32_t  CpuDrawCount;    // CPU-side count before culling
+		GpuBuffer	  DrawArgsBuffer;  // DrawIndexedArgs[], GPU-readable
+		GpuBuffer	  InstanceBuffer;  // PerInstanceData[], GPU-readable
+		GpuBuffer	  DrawCountBuffer; // uint32_t — GPU culling writes here
+		GpuBindingSet BindingSet;	   // InstanceBuffer (t2) + MaterialBuffer (t3) + TextureTable (t4)		
+		uint32_t	  CpuDrawCount;    // CPU-side count before culling
 	};
 
 	void Init(IGpuDevice* device, const Config& config);
 	void Build(std::span<const RenderPacket* const> packets, ICommandContext* cmd);
 	BinResult& GetBin(DrawBinFlags bin);
+	GpuBuffer MegaVertexBuffer() const { return m_MegaVB; }
+	GpuBuffer MegaIndexBuffer() const { return m_MegaIB; }
+	GpuDescriptorTable TextureTable() const { return m_TextureTable; }
 	
 private:
 	struct alignas(16) GpuMaterialData
@@ -82,6 +86,7 @@ private:
 	void              GrowMegaIB(uint32_t requiredIndices, ICommandContext* cmd);
 	uint32_t		  RegisterMaterial(AssetHandle<MaterialAsset> material, ICommandContext* cmd);
 	uint32_t		  RegisterTexture(AssetHandle<TextureAsset> texture);
+	void			  RebuildSceneBindingSet();
 
 	IGpuDevice*			m_Device = nullptr;
 	AssetManager*		m_AssetManager = nullptr;
@@ -102,6 +107,7 @@ private:
 	GpuBuffer m_MaterialBuffer;
 	uint32_t  m_MaxMaterials;
 	bool      m_MaterialDirty = false;
+	GpuBindingLayout m_SceneBindingLayout;
 
 	// ---- Caches ----
 	std::unordered_map<AssetID, MeshRecord, std::hash<CoreUUID>>	m_MeshRecords;
