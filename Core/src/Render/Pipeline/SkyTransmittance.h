@@ -25,8 +25,8 @@ public:
 		Vector3 BetaRayleigh = { 5.802e-6f, 1.356e-5f, 3.310e-5f };
 		Vector3 BetaMie      = { 3.996e-6f, 3.996e-6f, 3.996e-6f };
 
-		float RayleighScaleHeight = 8000;
-		float MieScaleHeight = 1200;
+		float RayleighScaleHeight = -1.0f / 8.0f; // -0.125km
+		float MieScaleHeight = -1.0f / 1.2f; // -0.833km
 
 		uint32_t Width = 256;
 		uint32_t Height = 64;
@@ -43,13 +43,26 @@ public:
 		// Lengths  ÷ 1000 : m  → km
 		// Scattering × 1000 : /m → /km  (optical depth = β·ds, both scale together)
 		constexpr float mToKm = 1.0f / 1000.0f;
+		const float rayleighScaleHeightKm = config.RayleighScaleHeight * mToKm;
+		const float mieScaleHeightKm      = config.MieScaleHeight      * mToKm;
+
 		Constants cb = {
-			.PlanetRadius       = config.PlanetRadius                              * mToKm,
-			.AtmosphereHeight   = (config.AtmosphereRadius - config.PlanetRadius)  * mToKm,
-			.RayleighScattering = config.BetaRayleigh                              * (1.0f / mToKm),
-			.MieScattering      = config.BetaMie                                   * (1.0f / mToKm),
-			.RayleighScaleHeight = config.RayleighScaleHeight                      * mToKm,
-			.MieScaleHeight      = config.MieScaleHeight                           * mToKm,
+			.PlanetRadius       = config.PlanetRadius                             * mToKm,
+			.AtmosphereHeight   = (config.AtmosphereRadius - config.PlanetRadius) * mToKm,
+			.RayleighScattering = config.BetaRayleigh                             * (1.0f / mToKm),
+			.MieScattering      = config.BetaMie                                  * (1.0f / mToKm),
+			.RayleighDensity = {
+				{ 0.0f, 0.0f, 0.0f,                          0.0f, 0.0f },  // layer 0: zero width, inactive
+				{ 0.0f, 1.0f, -1.0f / rayleighScaleHeightKm, 0.0f, 0.0f },  // layer 1: standard exponential
+			},
+			.MieDensity = {
+				{ 0.0f, 0.0f, 0.0f,                     0.0f, 0.0f },
+				{ 0.0f, 1.0f, -1.0f / mieScaleHeightKm, 0.0f, 0.0f },
+			},
+			.OzoneDensity = {
+				{ 25.0f, 0.0f, 0.0f,  1.0f / 15.0f, -10.0f / 15.0f },  // 0–25 km: rising
+				{  0.0f, 0.0f, 0.0f, -1.0f / 15.0f,  40.0f / 15.0f },  // 25+ km: falling
+			},
 		};
 
 		m_Backend = config.Backend;
@@ -69,7 +82,7 @@ public:
 
 		// ---- Create LUT texture ----
 		TextureDesc lutDesc;
-		lutDesc.Format    = GpuFormat::RGBA16_FLOAT;
+		lutDesc.Format    = GpuFormat::RGBA32_FLOAT;
 		lutDesc.DebugName = "SkyTransmittanceLut";
 		lutDesc.Width     = m_Width;
 		lutDesc.Height    = m_Height;
@@ -169,11 +182,21 @@ private:
 	uint32_t           m_Width, m_Height;
 	RenderBackend      m_Backend;
 
+	struct DensityProfileLayer
+	{
+		float Width;
+		float ExpTerm;
+		float ExpScale;
+		float LinearTerm;
+		float ConstantTerm;
+		float _pad[3]; // pad to 32 bytes for cbuffer alignment
+	};
+
 	struct alignas(16) Constants
 	{
 		float   PlanetRadius;       // offset 0
 		float   AtmosphereHeight;   // offset 4
-		float   _pad0[2];           // offset 8  — pad Vector3 to 16-byte boundary
+		float   _pad0[2];           // offset 8  — pad to 16
 
 		Vector3 RayleighScattering; // offset 16
 		float   _pad1;              // offset 28 — pad to 32
@@ -181,9 +204,10 @@ private:
 		Vector3 MieScattering;      // offset 32
 		float   _pad2;              // offset 44 — pad to 48
 
-		float   RayleighScaleHeight; // offset 48
-		float   MieScaleHeight;      // offset 52
-		float   _pad3[2];            // offset 56 — pad to 64
+		DensityProfileLayer RayleighDensity[2]; // offset 48  (64 bytes)
+		DensityProfileLayer MieDensity[2];      // offset 112 (64 bytes)
+		DensityProfileLayer OzoneDensity[2];    // offset 176 (64 bytes)
+		// Total: 240 bytes
 	};
 	static_assert(sizeof(Constants) % 16 == 0, "Constants must be 16-byte aligned");
 };
