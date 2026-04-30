@@ -7,7 +7,7 @@
 #include <Render/IGpuDevice.h>
 #include <Render/ICommandContext.h>
 #include <Render/FrameGraph/FrameGraph.h>
-#include <Render/Pipeline/SkyTransmittance.h>
+#include <Render/Pipeline/SkyLuts.h>
 #include <memory>
 #include <vector>
 
@@ -40,8 +40,8 @@ private:
 
 	std::vector<GpuFramebuffer>      m_Framebuffers;
 
-	// ---- Sky transmittance LUT ----
-	SkyTransmittancePass             m_SkyPass;
+	// ---- Sky LUTs (transmittance + single scattering) ----
+	SkyLutsPass                      m_SkyPass;
 
 	// ---- Fullscreen blit to display the LUT ----
 	GpuGraphicsPipeline              m_BlitPipeline;

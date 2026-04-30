@@ -47,13 +47,8 @@ void AppLayer::DestroyFramebuffers()
 
 void AppLayer::CreateBlitPipeline()
 {
-#if defined(COMPILE_WITH_VULKAN)
-	auto vsBytecode = ShaderLoader::LoadBinary("shaders/blit.vs.spv");
-	auto psBytecode = ShaderLoader::LoadBinary("shaders/blit.ps.spv");
-#elif defined(COMPILE_WITH_DX12)
 	auto vsBytecode = ShaderLoader::LoadBinary("shaders/blit.vs.cso");
 	auto psBytecode = ShaderLoader::LoadBinary("shaders/blit.ps.cso");
-#endif
 
 	ShaderDesc vsDesc;
 	vsDesc.Stage      = ShaderStage::Vertex;
@@ -91,7 +86,7 @@ void AppLayer::CreateBlitPipeline()
 	// ---- Binding set: bind the sky LUT as SRV ----
 	BindingSetDesc setDesc;
 	setDesc.Items = {
-		BindingItem::Texture(0, m_SkyPass.Lut()),
+		BindingItem::Texture(0, m_SkyPass.TransmittanceLut()),
 		BindingItem::Sampler(0, m_LinearSampler),
 	};
 	m_BlitBindingSet = m_GpuDevice->CreateBindingSet(setDesc, m_BlitBindingLayout);
@@ -104,6 +99,7 @@ void AppLayer::CreateBlitPipeline()
 	pipelineDesc.BindingLayouts = { m_BlitBindingLayout };
 	// No input layout — positions are generated in the VS from SV_VertexID.
 	pipelineDesc.Rasterizer.CullMode = CullMode::None;
+	pipelineDesc.DepthStencil.DepthTestEnable = false;
 
 	CORE_ASSERT(!m_Framebuffers.empty(), "Framebuffers must exist before CreateBlitPipeline");
 	m_BlitPipeline = m_GpuDevice->CreateGraphicsPipeline(pipelineDesc, m_Framebuffers[0]);
@@ -136,11 +132,7 @@ void AppLayer::OnAttach()
 	auto* glfwWS = dynamic_cast<GLFWWindowSystem*>(m_WindowSystem);
 	m_GlfwWindow  = glfwWS->GetGLFWWindow(m_WindowHandle);
 
-#if defined(COMPILE_WITH_VULKAN)
-	m_RenderDevice = std::make_unique<VulkanDevice>(m_GlfwWindow);
-#elif defined(COMPILE_WITH_DX12)
 	m_RenderDevice = std::make_unique<D3D12Device>(glfwWS->GetNativeHandle(m_WindowHandle));
-#endif
 
 	m_GpuDevice = m_RenderDevice->CreateDevice();
 
@@ -152,12 +144,8 @@ void AppLayer::OnAttach()
 
 	// ---- Init sky transmittance pass ----
 	// Dispatches the compute shader once; the LUT is ready before the first frame.
-	SkyTransmittancePass::Config skyConfig;
-#if defined(COMPILE_WITH_VULKAN)
-	skyConfig.Backend = RenderBackend::Vulkan;
-#elif defined(COMPILE_WITH_DX12)
+	SkyLutsPass::Config skyConfig;
 	skyConfig.Backend = RenderBackend::D3D12;
-#endif
 
 	m_CommandContext->Open();
 	m_SkyPass.Init(m_GpuDevice, m_CommandContext.get(), skyConfig);
@@ -225,7 +213,7 @@ void AppLayer::OnUpdate(float /*deltaTime*/)
 	// ---- Import the pre-computed sky LUT ----
 	// The LUT was dispatched once during Init. Add() just imports it as
 	// a readable FrameGraph resource so the blit pass can declare a dependency.
-	SkyTransmittancePass::Output skyOut = m_SkyPass.Add(*m_FrameGraph);
+	SkyLutsPass::Output skyOut = m_SkyPass.Add(*m_FrameGraph);
 
 	// ---- Fullscreen blit — display the LUT ----
 	GpuFramebuffer fb = m_Framebuffers[imageIdx];
