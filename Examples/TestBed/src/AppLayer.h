@@ -7,7 +7,6 @@
 #include <Render/IGpuDevice.h>
 #include <Render/ICommandContext.h>
 #include <Render/FrameGraph/FrameGraph.h>
-#include <Render/Pipeline/SkyLuts.h>
 #include <memory>
 #include <vector>
 
@@ -26,8 +25,6 @@ public:
 private:
 	void CreateFramebuffers();
 	void DestroyFramebuffers();
-	void CreateBlitPipeline();
-	void DestroyBlitPipeline();
 
 	IWindowSystem*                   m_WindowSystem  = nullptr;
 	WindowHandle                     m_WindowHandle;
@@ -39,15 +36,6 @@ private:
 	std::unique_ptr<FrameGraph>      m_FrameGraph;
 
 	std::vector<GpuFramebuffer>      m_Framebuffers;
-
-	// ---- Sky LUTs (transmittance + single scattering) ----
-	SkyLutsPass                      m_SkyPass;
-
-	// ---- Fullscreen blit to display the LUT ----
-	GpuGraphicsPipeline              m_BlitPipeline;
-	GpuBindingLayout                 m_BlitBindingLayout;
-	GpuBindingSet                    m_BlitBindingSet;
-	GpuSampler                       m_LinearSampler;
 
 	bool     m_PendingResize = false;
 	uint32_t m_Width = 0, m_Height = 0;

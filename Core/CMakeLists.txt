@@ -105,6 +105,20 @@ find_program(DXC_EXECUTABLE dxc
     DOC "DirectX Shader Compiler"
 )
 
+find_path(DXC_INCLUDE_DIR dxc/dxcapi.h
+    HINTS "$ENV{VULKAN_SDK}/Include" "$ENV{VK_SDK_PATH}/Include")
+find_library(DXC_LIB dxcompiler
+    HINTS "$ENV{VULKAN_SDK}/Lib" "$ENV{VK_SDK_PATH}/Lib")
+
+if(DXC_INCLUDE_DIR AND DXC_LIB)
+    message(STATUS "[Core] DXC runtime found: ${DXC_LIB}")
+    target_include_directories(Core PRIVATE ${DXC_INCLUDE_DIR})
+    target_link_libraries(Core PRIVATE ${DXC_LIB})
+    target_compile_definitions(Core PUBLIC CORE_HAS_DXC)
+else()
+    message(WARNING "[Core] dxcapi.h or dxcompiler.lib not found — HlslImporter disabled")
+endif()
+
 if(NOT DXC_EXECUTABLE)
     message(WARNING
         "[Core] dxc not found — shaders will not be compiled automatically. "
@@ -117,60 +131,7 @@ else()
     file(GLOB_RECURSE CORE_HLSL_SOURCES  CONFIGURE_DEPENDS "${SHADER_DIR}/*.hlsl")
     file(GLOB_RECURSE CORE_HLSLI_SOURCES CONFIGURE_DEPENDS "${SHADER_DIR}/*.hlsli")
 
-    # SkyLuts.cs.hlsl has two entry points and is compiled separately below.
-    list(FILTER CORE_HLSL_SOURCES EXCLUDE REGEX "SkyLuts\\.cs\\.hlsl$")
-
     set(SHADER_OUTPUTS)
-
-    # ---------------------------------------------------------------------------
-    # SkyLuts.cs.hlsl — two entry points compiled to separate bytecode files.
-    # ---------------------------------------------------------------------------
-    set(SKYLUTS_HLSL "${SHADER_DIR}/SkyLuts.cs.hlsl")
-    set(SKYLUTS_ENTRIES mainTransmittance mainScattering)
-
-    foreach(ENTRY IN LISTS SKYLUTS_ENTRIES)
-        set(OUT_STEM "SkyLuts.${ENTRY}.cs")
-
-        if(COMPILE_WITH_VULKAN)
-            set(SPV_OUT "${SHADER_DIR}/${OUT_STEM}.spv")
-            add_custom_command(
-                OUTPUT  "${SPV_OUT}"
-                COMMAND "${DXC_EXECUTABLE}"
-                        -T cs_6_6 -E "${ENTRY}"
-                        -spirv -fspv-target-env=vulkan1.1
-                        -fvk-b-shift 0 0
-                        -fvk-t-shift 2 0
-                        -fvk-s-shift 3 0
-                        -fvk-u-shift 4 0
-                        -I "${SHADER_DIR}"
-                        "${SKYLUTS_HLSL}"
-                        -Fo "${SPV_OUT}"
-                DEPENDS "${SKYLUTS_HLSL}" ${CORE_HLSLI_SOURCES}
-                COMMENT "HLSL -> SPIR-V: SkyLuts.cs.hlsl [${ENTRY}]"
-                VERBATIM
-            )
-            list(APPEND SHADER_OUTPUTS "${SPV_OUT}")
-        endif()
-
-        if(COMPILE_WITH_DX12)
-            set(CSO_OUT "${SHADER_DIR}/${OUT_STEM}.cso")
-            add_custom_command(
-                OUTPUT  "${CSO_OUT}"
-                COMMAND "${DXC_EXECUTABLE}"
-                        -T cs_6_6 -E "${ENTRY}"
-                        -I "${SHADER_DIR}"
-                        "${SKYLUTS_HLSL}"
-                        -Fo "${CSO_OUT}"
-                DEPENDS "${SKYLUTS_HLSL}" ${CORE_HLSLI_SOURCES}
-                COMMENT "HLSL -> DXIL: SkyLuts.cs.hlsl [${ENTRY}]"
-                VERBATIM
-            )
-            list(APPEND SHADER_OUTPUTS "${CSO_OUT}")
-        endif()
-    endforeach()
-
-    # Add SkyLuts.cs.hlsl back to the source list for IDE visibility.
-    list(APPEND CORE_HLSL_SOURCES "${SKYLUTS_HLSL}")
 
     foreach(HLSL IN LISTS CORE_HLSL_SOURCES)
         # Skip SkyLuts — already handled above.

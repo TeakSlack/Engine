@@ -134,10 +134,6 @@ else()
     set(CORE_SHADER_SRC_DIR "${CMAKE_SOURCE_DIR}/Core/shaders")
     file(GLOB_RECURSE CORE_HLSL_SOURCES CONFIGURE_DEPENDS "${CORE_SHADER_SRC_DIR}/*.hlsl")
 
-    # SkyLuts.cs.hlsl produces two bytecode files (one per entry point); exclude
-    # it from the generic copy loop and handle it explicitly below.
-    list(FILTER CORE_HLSL_SOURCES EXCLUDE REGEX "SkyLuts\\.cs\\.hlsl$")
-
     set(CORE_SHADER_COPY_OUTPUTS)
 
     foreach(HLSL IN LISTS CORE_HLSL_SOURCES)
@@ -168,35 +164,6 @@ else()
                 COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${SRC}" "${DST}"
                 DEPENDS "${SRC}"
                 COMMENT "Copying Core DXIL: ${STEM}.${STAGE}.cso"
-                VERBATIM
-            )
-            list(APPEND CORE_SHADER_COPY_OUTPUTS "${DST}")
-        endif()
-    endforeach()
-
-    # SkyLuts: copy both entry-point outputs explicitly.
-    foreach(ENTRY mainTransmittance mainScattering)
-        set(STEM "SkyLuts.${ENTRY}.cs")
-        if(COMPILE_WITH_VULKAN)
-            set(SRC "${CORE_SHADER_SRC_DIR}/${STEM}.spv")
-            set(DST "${SHADER_DIR}/${STEM}.spv")
-            add_custom_command(
-                OUTPUT  "${DST}"
-                COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${SRC}" "${DST}"
-                DEPENDS "${SRC}"
-                COMMENT "Copying Core SPIR-V: ${STEM}.spv"
-                VERBATIM
-            )
-            list(APPEND CORE_SHADER_COPY_OUTPUTS "${DST}")
-        endif()
-        if(COMPILE_WITH_DX12)
-            set(SRC "${CORE_SHADER_SRC_DIR}/${STEM}.cso")
-            set(DST "${SHADER_DIR}/${STEM}.cso")
-            add_custom_command(
-                OUTPUT  "${DST}"
-                COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${SRC}" "${DST}"
-                DEPENDS "${SRC}"
-                COMMENT "Copying Core DXIL: ${STEM}.cso"
                 VERBATIM
             )
             list(APPEND CORE_SHADER_COPY_OUTPUTS "${DST}")
