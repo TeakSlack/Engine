@@ -59,9 +59,7 @@ struct MaterialAsset
 
 struct ShaderAsset
 {
-    std::vector<uint8_t> Bytecode;
-    ShaderStage          Stage      = ShaderStage::None;
-    std::string          EntryPoint = "main";
+    std::vector<uint32_t> Code; // SPIR-V or DXIL bytecode
 };
 
 #endif // ASSET_H

@@ -13,7 +13,7 @@ std::unique_ptr<TextureAsset> StbTextureImporter::Load(const std::filesystem::pa
 
     if (!pixels)
     {
-        CORE_WARN("[TextureImporter] Failed to load: {} — {}", path.string(), stbi_failure_reason());
+        LOG_WARN_TO("[TextureImporter]",  "Failed to load : {} —{}", path.string(), stbi_failure_reason());
         return nullptr;
     }
 
@@ -25,9 +25,6 @@ std::unique_ptr<TextureAsset> StbTextureImporter::Load(const std::filesystem::pa
     asset->Data.assign(pixels, pixels + byteSize);
 
     stbi_image_free(pixels);
-
-    CORE_INFO("[TextureImporter] Loaded {}x{} ({} ch → RGBA8): {}",
-        width, height, channels, path.filename().string());
 
     return asset;
 }

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(DeferredRender CXX C)
+project(Engine CXX C)
 
 # ---------------------------------------------------------------------------
 # Development build configuration (Gregory "Game Engine Architecture" §3)

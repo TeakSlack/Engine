@@ -10,10 +10,8 @@
 #include "Asset/Asset.h"
 #include "Asset/AssetLoader.h"
 #include "Asset/TextureImporter.h"
-#include "Asset/HlslImporter.h"
 #include "Asset/Meta.h"
 #include "Util/ThreadPool.h"
-#include "Util/Assert.h"
 
 // Forward declare so AssetRef can reference it
 class AssetManager;
@@ -66,9 +64,6 @@ public:
 	void Shutdown() override;
 	void Tick(float deltaTime) override;
 
-	void SetBackend(RenderBackend backend);
-	void AddShaderIncludePath(const std::filesystem::path& path);
-
 	template<typename T>
 	AssetHandle<T> LoadAsset(const std::filesystem::path& path);
 
@@ -81,7 +76,6 @@ public:
 	std::filesystem::path GetAssetRoot() const { return m_AssetRoot; }
 
 private:
-	void RebuildHlslImporter();
 	template<typename T>
 	AssetHandle<T> AddAssetWithID(AssetID id, T&& asset, const std::filesystem::path& srcPath);
 	void ScanMetaFiles();
@@ -110,10 +104,6 @@ private:
 	std::unordered_map<std::filesystem::path, AssetID>        m_PathToID;
 	std::unordered_map<std::filesystem::path, GltfObject>     m_GltfObjects;
 	std::filesystem::path                                      m_AssetRoot;
-
-	RenderBackend                              m_Backend = RenderBackend::None;
-	std::vector<std::filesystem::path>         m_ShaderIncludePaths;
-	std::unique_ptr<HlslImporter>              m_HlslImporter;
 
 	std::unique_ptr<ThreadPool>  m_ThreadPool;
 	std::queue<CompletedJob>     m_CompletedJobs;
@@ -208,11 +198,6 @@ inline AssetHandle<T> AssetManager::LoadAsset(const std::filesystem::path& path)
             StbTextureImporter loader;
             asset = loader.Load(fullPath);
         }
-        else if constexpr (std::is_same_v<T, ShaderAsset>)
-        {
-            CORE_ASSERT(m_HlslImporter, "Call SetBackend() before loading shader assets");
-            asset = m_HlslImporter->Load(fullPath);
-        }
         else
         {
             static_assert(sizeof(T) == 0, "No IAssetLoader registered for this type");
@@ -233,30 +218,6 @@ inline AssetHandle<T> AssetManager::LoadAsset(const std::filesystem::path& path)
     });
 
     return AssetHandle<T>{ id };
-}
-
-// -------------------------------------------------------------------------
-// AssetManager — inline helpers
-// -------------------------------------------------------------------------
-
-inline void AssetManager::RebuildHlslImporter()
-{
-    std::vector<std::filesystem::path> paths = { m_AssetRoot / "shaders" };
-    paths.insert(paths.end(), m_ShaderIncludePaths.begin(), m_ShaderIncludePaths.end());
-    m_HlslImporter = std::make_unique<HlslImporter>(m_Backend, std::move(paths));
-}
-
-inline void AssetManager::SetBackend(RenderBackend backend)
-{
-    m_Backend = backend;
-    RebuildHlslImporter();
-}
-
-inline void AssetManager::AddShaderIncludePath(const std::filesystem::path& path)
-{
-    m_ShaderIncludePaths.push_back(path);
-    if (m_Backend != RenderBackend::None)
-        RebuildHlslImporter();
 }
 
 // -------------------------------------------------------------------------

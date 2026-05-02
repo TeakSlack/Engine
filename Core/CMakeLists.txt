@@ -105,19 +105,6 @@ find_program(DXC_EXECUTABLE dxc
     DOC "DirectX Shader Compiler"
 )
 
-find_path(DXC_INCLUDE_DIR dxc/dxcapi.h
-    HINTS "$ENV{VULKAN_SDK}/Include" "$ENV{VK_SDK_PATH}/Include")
-find_library(DXC_LIB dxcompiler
-    HINTS "$ENV{VULKAN_SDK}/Lib" "$ENV{VK_SDK_PATH}/Lib")
-
-if(DXC_INCLUDE_DIR AND DXC_LIB)
-    message(STATUS "[Core] DXC runtime found: ${DXC_LIB}")
-    target_include_directories(Core PRIVATE ${DXC_INCLUDE_DIR})
-    target_link_libraries(Core PRIVATE ${DXC_LIB})
-    target_compile_definitions(Core PUBLIC CORE_HAS_DXC)
-else()
-    message(WARNING "[Core] dxcapi.h or dxcompiler.lib not found — HlslImporter disabled")
-endif()
 
 if(NOT DXC_EXECUTABLE)
     message(WARNING
